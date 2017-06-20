@@ -1,0 +1,15 @@
+﻿{
+  "dependencies": {
+    "EnterpriseLibrary.WindowsAzure.TransientFaultHandling": "5.1.1212",
+    "log4net": "2.0.8",
+    "Newtonsoft.Json": "8.0.3",
+    "WindowsAzure.ServiceBus": "4.1.2"
+  },
+  "frameworks": {
+    "net462": {}
+  },
+  "runtimes": {
+    "win-anycpu": {},
+    "win": {}
+  }
+}
