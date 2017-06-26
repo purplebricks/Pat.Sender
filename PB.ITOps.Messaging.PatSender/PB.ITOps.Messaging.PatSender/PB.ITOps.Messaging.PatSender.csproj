@@ -42,23 +42,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extentions\BrokeredMessageExtensions.cs" />
-    <Compile Include="Publish\BaseMessagePublisher.cs" />
-    <Compile Include="Publish\MessagePublisher.cs" />
-    <Compile Include="Send\ClientBusQueue.cs" />
-    <Compile Include="Send\IClientBusQueue.cs" />
-    <Compile Include="Publish\IMessagePublisher.cs" />
-    <Compile Include="Send\IMessageSender.cs" />
-    <Compile Include="Send\NullMessageSender.cs" />
-    <Compile Include="Publish\BatchMessagePublisher.cs" />
+    <Compile Include="Extensions\BrokeredMessageExtensions.cs" />
+    <Compile Include="IMessageSender.cs" />
+    <Compile Include="NullMessageSender.cs" />
     <Compile Include="PatSenderSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Send\MessageSender.cs" />
-    <Compile Include="Send\ConnectionResolver.cs" />
-    <Compile Include="Extentions\TypeExtensions.cs" />
+    <Compile Include="MessageSender.cs" />
+    <Compile Include="ConnectionResolver.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="IMessagePublisher.cs" />
+    <Compile Include="MessagePublisher.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

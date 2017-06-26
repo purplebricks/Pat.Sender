@@ -7,7 +7,7 @@ using Microsoft.Practices.EnterpriseLibrary.WindowsAzure.TransientFaultHandling.
 using Microsoft.Practices.TransientFaultHandling;
 using Microsoft.ServiceBus.Messaging;
 
-namespace PB.ITOps.Messaging.PatSender.Send
+namespace PB.ITOps.Messaging.PatSender
 {
     public class MessageSender : IMessageSender
     {
@@ -15,7 +15,6 @@ namespace PB.ITOps.Messaging.PatSender.Send
         private readonly PatSenderSettings _senderSettings;
         private readonly RetryPolicy<ServiceBusTransientErrorDetectionStrategy> _retryPolicy;
         private readonly ConnectionResolver _connectionResolver;
-        private List<BrokeredMessage> _messagesToSend;
 
         private const long MaxBatchSizeInBytes = 262144;    // 256k
 
@@ -28,9 +27,9 @@ namespace PB.ITOps.Messaging.PatSender.Send
             _connectionResolver = new ConnectionResolver(senderSettings);
         }
 
-        public async Task SendMessages(IList<BrokeredMessage> messages)
+        public async Task SendMessages(IEnumerable<BrokeredMessage> messages)
         {
-            _messagesToSend = messages.ToList();
+            var messagesToSend = messages.ToList();
             TopicClient client = null;
             bool retryOnFailOver;
             do
@@ -40,7 +39,7 @@ namespace PB.ITOps.Messaging.PatSender.Send
                 try
                 {
                     client = TopicClient.CreateFromConnectionString(connectionString, _senderSettings.TopicName);
-                    await SendPartitionedBatch(client, _messagesToSend);
+                    await SendPartitionedBatch(client, messagesToSend);
                 }
                 catch (Exception ex)
                 {
@@ -53,7 +52,7 @@ namespace PB.ITOps.Messaging.PatSender.Send
                     }
                     else
                     {
-                        _log.FatalFormat("Failed to send topic message(s) of type: {0}", string.Join(", ", _messagesToSend.Select(m => m.ContentType).Distinct()));
+                        _log.FatalFormat("Failed to send topic message(s) of type: {0}", string.Join(", ", messagesToSend.Select(m => m.ContentType).Distinct()));
                         throw;
                     }
                 }
@@ -91,6 +90,7 @@ namespace PB.ITOps.Messaging.PatSender.Send
                     batchSize += brokeredMessage.Size;
                 }
             }
+
             // The final batch is sent outside of the loop
             await SendBatch(topicClient, batchList, batchSize, totalMessageCount);
         }
@@ -100,7 +100,7 @@ namespace PB.ITOps.Messaging.PatSender.Send
             try
             {
                 //clone required within retry policy, otherwise retry will fail with "brokered message '{id}' has already been consumed"
-                await _retryPolicy.ExecuteAction(async () => await topicClient.SendBatchAsync(_messagesToSend.Select(m => m.Clone()).ToList()));
+                await _retryPolicy.ExecuteAction(async () => await topicClient.SendBatchAsync(messages.Select(m => m.Clone()).ToList()));
             }
             catch (Exception exc)
             {
@@ -109,11 +109,6 @@ namespace PB.ITOps.Messaging.PatSender.Send
                     : $"Failed to send {batchSize} messages from batch of {totalMessageCount} messages: {exc.Message}");
 
                 throw;
-            }
-
-            foreach (var msg in messages)
-            {
-                _messagesToSend.RemoveAll(m => m.MessageId == msg.MessageId);
             }
         }
 

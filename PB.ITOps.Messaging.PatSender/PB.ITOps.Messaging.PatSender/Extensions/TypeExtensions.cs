@@ -1,6 +1,6 @@
 using System;
 
-namespace PB.ITOps.Messaging.PatSender.Extentions
+namespace PB.ITOps.Messaging.PatSender.Extensions
 {
     public static class TypeExtensions
     {

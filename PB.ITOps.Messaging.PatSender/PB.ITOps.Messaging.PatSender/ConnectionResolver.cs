@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace PB.ITOps.Messaging.PatSender.Send
+namespace PB.ITOps.Messaging.PatSender
 {
     public class ConnectionResolver
     {
