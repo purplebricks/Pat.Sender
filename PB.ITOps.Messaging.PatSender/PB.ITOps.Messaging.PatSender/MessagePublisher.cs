@@ -8,7 +8,7 @@ using PB.ITOps.Messaging.PatSender.Extensions;
 
 namespace PB.ITOps.Messaging.PatSender
 {
-    class MessagePublisher : IMessagePublisher
+    public class MessagePublisher : IMessagePublisher
     {
         private readonly IMessageSender _messageSender;
         private readonly string _correlationId;
