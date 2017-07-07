@@ -19,13 +19,29 @@ namespace PB.ITOps.Messaging.PatSender
             _correlationId = correlationId;
         }
 
-        public async Task Publish<TMessage>(TMessage message) where TMessage : class
+        /// <summary>
+        /// Publishes a single event, sending it directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event type
+        /// Sets the correlation id on the message if specified.
+        /// </summary>
+        /// <typeparam name="TEvent"></typeparam>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public async Task PublishEvent<TEvent>(TEvent message) where TEvent : class
         {
             var brokeredMessage = GenerateMessage(message);
             await _messageSender.SendMessages(new[] {brokeredMessage});
         }
 
-        public async Task Publish<TMessage>(IEnumerable<TMessage> messages) where TMessage : class
+        /// <summary>
+        /// Publishes a collection of events, sending them directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event types
+        /// Sets the correlation id on each message if specified.
+        /// </summary>
+        /// <typeparam name="TEvent"></typeparam>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public async Task PublishEvents<TEvent>(IEnumerable<TEvent> messages) where TEvent : class
         {
             var brokeredMessages = GenerateMessages(messages);
             await _messageSender.SendMessages(brokeredMessages);

@@ -9,6 +9,10 @@ using Microsoft.ServiceBus.Messaging;
 
 namespace PB.ITOps.Messaging.PatSender
 {
+    /// <summary>
+    /// Sends brokered messages to specified topic using batching and retry policies.
+    /// For internal Pat Sender messaging use only.
+    /// </summary>
     public class MessageSender : IMessageSender
     {
         private readonly ILog _log;
@@ -27,6 +31,12 @@ namespace PB.ITOps.Messaging.PatSender
             _connectionResolver = new ConnectionResolver(senderSettings);
         }
 
+        /// <summary>
+        /// Sends brokered messages directly to service bus topic
+        /// NB: Does not decorate messages with content or message type
+        /// </summary>
+        /// <param name="messages"></param>
+        /// <returns></returns>
         public async Task SendMessages(IEnumerable<BrokeredMessage> messages)
         {
             var messagesToSend = messages.ToList();
@@ -38,7 +48,11 @@ namespace PB.ITOps.Messaging.PatSender
                 var connectionString = _connectionResolver.GetConnection();
                 try
                 {
-                    client = TopicClient.CreateFromConnectionString(connectionString, _senderSettings.TopicName);
+                    var topicName = _senderSettings.UseDevelopmentTopic
+                        ? _senderSettings.TopicName + Environment.MachineName
+                        : _senderSettings.TopicName;
+
+                    client = TopicClient.CreateFromConnectionString(connectionString, topicName);
                     await SendPartitionedBatch(client, messagesToSend);
                 }
                 catch (Exception ex)
