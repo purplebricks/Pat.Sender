@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace PB.ITOps.Messaging.PatSender
 {
-    public class ConnectionResolver
+    internal class ConnectionResolver
     {
         private readonly PatSenderSettings _senderSettings;
         private static volatile bool _topicUsePrimary;

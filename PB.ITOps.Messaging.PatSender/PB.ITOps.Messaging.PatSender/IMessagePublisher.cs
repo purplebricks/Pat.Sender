@@ -5,8 +5,8 @@ namespace PB.ITOps.Messaging.PatSender
 {
     public interface IMessagePublisher
     {
-        Task Publish<TMessage>(TMessage message) where TMessage : class;
+        Task PublishEvent<TEvent>(TEvent message) where TEvent : class;
 
-        Task Publish<TMessage>(IEnumerable<TMessage> messages) where TMessage : class;
+        Task PublishEvents<TEvent>(IEnumerable<TEvent> messages) where TEvent : class;
     }
 }
