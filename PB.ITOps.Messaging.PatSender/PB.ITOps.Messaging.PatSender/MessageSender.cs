@@ -48,11 +48,7 @@ namespace PB.ITOps.Messaging.PatSender
                 var connectionString = _connectionResolver.GetConnection();
                 try
                 {
-                    var topicName = _senderSettings.UseDevelopmentTopic
-                        ? _senderSettings.TopicName + Environment.MachineName
-                        : _senderSettings.TopicName;
-
-                    client = TopicClient.CreateFromConnectionString(connectionString, topicName);
+                    client = TopicClient.CreateFromConnectionString(connectionString, _senderSettings.TopicName);
                     await SendPartitionedBatch(client, messagesToSend);
                 }
                 catch (Exception ex)
