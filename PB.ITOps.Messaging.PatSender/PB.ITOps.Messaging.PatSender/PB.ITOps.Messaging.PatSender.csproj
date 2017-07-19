@@ -43,7 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\BrokeredMessageExtensions.cs" />
+    <Compile Include="Legacy\ILegacyMessagePublisher.cs" />
     <Compile Include="IMessageSender.cs" />
+    <Compile Include="Legacy\LegacyMessagePublisher.cs" />
     <Compile Include="PatSenderSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MessageSender.cs" />
