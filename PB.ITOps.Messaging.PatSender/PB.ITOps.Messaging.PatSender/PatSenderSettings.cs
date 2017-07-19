@@ -17,8 +17,13 @@ namespace PB.ITOps.Messaging.PatSender
         /// </summary>
         public string TopicName
         {
-            get => UseDevelopmentTopic ? _topicName + Environment.MachineName : _topicName;
+            get => _topicName;
             set => _topicName = value;
+        }
+
+        public string EffectiveTopicName
+        {
+            get => UseDevelopmentTopic ? _topicName + Environment.MachineName : _topicName;
         }
 
         /// <summary>

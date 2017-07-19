@@ -48,7 +48,7 @@ namespace PB.ITOps.Messaging.PatSender
                 var connectionString = _connectionResolver.GetConnection();
                 try
                 {
-                    client = TopicClient.CreateFromConnectionString(connectionString, _senderSettings.TopicName);
+                    client = TopicClient.CreateFromConnectionString(connectionString, _senderSettings.EffectiveTopicName);
                     await SendPartitionedBatch(client, messagesToSend);
                 }
                 catch (Exception ex)
