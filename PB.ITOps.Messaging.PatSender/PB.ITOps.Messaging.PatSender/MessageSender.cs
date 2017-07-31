@@ -6,6 +6,7 @@ using log4net;
 using Microsoft.Practices.EnterpriseLibrary.WindowsAzure.TransientFaultHandling.ServiceBus;
 using Microsoft.Practices.TransientFaultHandling;
 using Microsoft.ServiceBus.Messaging;
+using PB.ITOps.Messaging.PatSender.Extensions;
 
 namespace PB.ITOps.Messaging.PatSender
 {
@@ -84,20 +85,21 @@ namespace PB.ITOps.Messaging.PatSender
 
             foreach (var brokeredMessage in brokeredMessageList)
             {
-                if ((batchSize + brokeredMessage.Size) > MaxBatchSizeInBytes)
+                var size = brokeredMessage.GetSize();
+                if ((batchSize + size) > MaxBatchSizeInBytes)
                 {
                     // Send current batch
                     await SendBatch(topicClient, batchList, batchSize, totalMessageCount);
 
                     // Initialize a new batch
                     batchList = new List<BrokeredMessage> { brokeredMessage };
-                    batchSize = brokeredMessage.Size;
+                    batchSize = size;
                 }
                 else
                 {
                     // Add the BrokeredMessage to the current batch
                     batchList.Add(brokeredMessage);
-                    batchSize += brokeredMessage.Size;
+                    batchSize += size;
                 }
             }
 
@@ -110,13 +112,17 @@ namespace PB.ITOps.Messaging.PatSender
             try
             {
                 //clone required within retry policy, otherwise retry will fail with "brokered message '{id}' has already been consumed"
-                await _retryPolicy.ExecuteAction(async () => await topicClient.SendBatchAsync(messages.Select(m => m.Clone()).ToList()));
+                await _retryPolicy.ExecuteAction(async () =>
+                {
+                    var clonedMessages = messages.Select(m => m.Clone()).ToList();
+                    await topicClient.SendBatchAsync(clonedMessages);
+                });
             }
             catch (Exception exc)
             {
-                _log.Warn(batchSize == messages.Count
+                _log.Warn(totalMessageCount == messages.Count
                     ? $"Failed to send complete batch of messages: {exc.Message}"
-                    : $"Failed to send {batchSize} messages from batch of {totalMessageCount} messages: {exc.Message}");
+                    : $"Failed to send {messages.Count} messages from batch of {totalMessageCount} messages: {exc.Message}");
 
                 throw;
             }
