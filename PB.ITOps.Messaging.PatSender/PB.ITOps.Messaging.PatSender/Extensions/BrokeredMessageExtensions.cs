@@ -1,4 +1,7 @@
+using System.Collections;
+using System.Linq;
 using Microsoft.ServiceBus.Messaging;
+using System;
 
 namespace PB.ITOps.Messaging.PatSender.Extensions
 {
@@ -12,6 +15,24 @@ namespace PB.ITOps.Messaging.PatSender.Extensions
             }
 
             return message;
+        }
+
+        public static long GetSize(this BrokeredMessage message)
+        {
+            long estimatedSize = 61;
+            int minimumFieldSize = 8;
+
+            estimatedSize += message.ContentType.Length;
+            foreach (var propertyPair in message.Properties.AsEnumerable())
+            {
+                estimatedSize += propertyPair.Key.Length + 5;
+                if (propertyPair.Value != null)
+                {
+                    estimatedSize += Math.Max(minimumFieldSize, propertyPair.Value.ToString().Length);
+                }
+            }
+            estimatedSize += message.Size;
+            return estimatedSize;
         }
     }
 }
