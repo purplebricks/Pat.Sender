@@ -3,19 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.ServiceBus.Messaging;
-using Newtonsoft.Json;
 using PB.ITOps.Messaging.PatSender.Extensions;
+using PB.ITOps.Messaging.PatSender.MessageGeneration;
 
 namespace PB.ITOps.Messaging.PatSender
 {
     public class MessagePublisher : IMessagePublisher
     {
         private readonly IMessageSender _messageSender;
+        private readonly IMessageGenerator _messageGenerator;
         private readonly string _correlationId;
 
-        public MessagePublisher(IMessageSender messageSender, string correlationId = null)
+        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, string correlationId = null)
         {
             _messageSender = messageSender;
+            _messageGenerator = messageGenerator;
             _correlationId = correlationId;
         }
 
@@ -52,16 +54,12 @@ namespace PB.ITOps.Messaging.PatSender
 
         private BrokeredMessage GenerateMessage(object message)
         {
+            var brokeredMessage = _messageGenerator.GenerateBrokeredMessage(message);
+
             var messageType = message.GetType();
-
-            var brokeredMessage = new BrokeredMessage(JsonConvert.SerializeObject(message))
-            {
-                MessageId = Guid.NewGuid().ToString(),
-                ContentType = messageType.SimpleQualifiedName()
-            };
-
+            brokeredMessage.MessageId = Guid.NewGuid().ToString();
+            brokeredMessage.ContentType = messageType.SimpleQualifiedName();
             brokeredMessage.Properties["MessageType"] = messageType.FullName;
-
             brokeredMessage.PopulateCorrelationId(_correlationId);
 
             return brokeredMessage;
