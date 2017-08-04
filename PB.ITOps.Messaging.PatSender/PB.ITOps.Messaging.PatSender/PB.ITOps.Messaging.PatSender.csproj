@@ -13,8 +13,4 @@
     <PackageReference Include="WindowsAzure.ServiceBus" Version="4.1.2" />
     <PackageReference Include="EnterpriseLibrary.WindowsAzure.TransientFaultHandling" Version="5.1.1212" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-    <Folder Include="Properties\" />
-  </ItemGroup>
 </Project>
