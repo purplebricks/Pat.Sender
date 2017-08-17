@@ -23,7 +23,7 @@ namespace PB.ITOps.Messaging.PatSender
 
         public bool HasFailOver()
         {
-            return _topicUsePrimary && string.IsNullOrEmpty(_senderSettings.FailoverConnection);
+            return _topicUsePrimary && !string.IsNullOrEmpty(_senderSettings.FailoverConnection);
         }
 
         public string GetConnection()
