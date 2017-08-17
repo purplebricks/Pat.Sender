@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace PB.ITOps.Messaging.PatSender
 {
-    internal class ConnectionResolver
+    public class ConnectionResolver
     {
         private readonly PatSenderSettings _senderSettings;
         private static volatile bool _topicUsePrimary;
@@ -23,7 +23,7 @@ namespace PB.ITOps.Messaging.PatSender
 
         public bool HasFailOver()
         {
-            return _topicUsePrimary && string.IsNullOrEmpty(_senderSettings.FailoverConnection);
+            return _topicUsePrimary && !string.IsNullOrEmpty(_senderSettings.FailoverConnection);
         }
 
         public string GetConnection()
