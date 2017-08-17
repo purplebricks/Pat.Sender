@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using Microsoft.ServiceBus.Messaging;
 
 namespace PB.ITOps.Messaging.PatSender
 {
     public class TopicClientResolver
     {
-        private static readonly ConcurrentDictionary<string, TopicClient> Clients = new ConcurrentDictionary<string, TopicClient>();
+        private static readonly ConcurrentDictionary<string, object> Locks = new ConcurrentDictionary<string, object>();
+        private static readonly Dictionary<string, TopicClient> Clients = new Dictionary<string, TopicClient>();
 
         public static TopicClient GetTopic(string connectionString, string topicName)
         {
@@ -15,12 +16,17 @@ namespace PB.ITOps.Messaging.PatSender
                 return Clients[connectionString];
             }
 
-            var topicClient = TopicClient.CreateFromConnectionString(connectionString, topicName);
-            if (!Clients.TryAdd(connectionString, topicClient))
+            lock (Locks.GetOrAdd(connectionString, new object()))
             {
-                throw new InvalidOperationException($"Failed to add new topic client for topic {topicName}");
+                if (Clients.ContainsKey(connectionString))
+                {
+                    return Clients[connectionString];
+                }
+
+                var topicClient = TopicClient.CreateFromConnectionString(connectionString, topicName);
+                Clients.Add(connectionString, topicClient);
+                return topicClient;
             }
-            return topicClient;
         }
     }
 }
