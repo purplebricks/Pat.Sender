@@ -41,7 +41,6 @@ namespace PB.ITOps.Messaging.PatSender
         public async Task SendMessages(IEnumerable<BrokeredMessage> messages)
         {
             var messagesToSend = messages.ToList();
-            TopicClient client = null;
             bool retryOnFailOver;
             do
             {
@@ -49,7 +48,7 @@ namespace PB.ITOps.Messaging.PatSender
                 var connectionString = _connectionResolver.GetConnection();
                 try
                 {
-                    client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName);
+                    var client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName);
                     await SendPartitionedBatch(client, messagesToSend);
                 }
                 catch (Exception ex)
@@ -65,13 +64,6 @@ namespace PB.ITOps.Messaging.PatSender
                     {
                         _log.FatalFormat("Failed to send topic message(s) of type: {0}", string.Join(", ", messagesToSend.Select(m => m.ContentType).Distinct()));
                         throw;
-                    }
-                }
-                finally
-                {
-                    if (client != null)
-                    {
-                        client.Close();
                     }
                 }
             } while (retryOnFailOver);
