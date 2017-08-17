@@ -49,7 +49,7 @@ namespace PB.ITOps.Messaging.PatSender
                 var connectionString = _connectionResolver.GetConnection();
                 try
                 {
-                    client = TopicClient.CreateFromConnectionString(connectionString, _senderSettings.EffectiveTopicName);
+                    client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName);
                     await SendPartitionedBatch(client, messagesToSend);
                 }
                 catch (Exception ex)
