@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using log4net;
-using Microsoft.Practices.EnterpriseLibrary.WindowsAzure.TransientFaultHandling.ServiceBus;
-using Microsoft.Practices.TransientFaultHandling;
 using Microsoft.ServiceBus.Messaging;
 using PB.ITOps.Messaging.PatSender.Extensions;
 
@@ -18,7 +16,6 @@ namespace PB.ITOps.Messaging.PatSender
     {
         private readonly ILog _log;
         private readonly PatSenderSettings _senderSettings;
-        private readonly RetryPolicy<ServiceBusTransientErrorDetectionStrategy> _retryPolicy;
         private readonly ConnectionResolver _connectionResolver;
 
         private const long MaxBatchSizeInBytes = 262144;    // 256k
@@ -27,8 +24,6 @@ namespace PB.ITOps.Messaging.PatSender
         {
             _log = log;
             _senderSettings = senderSettings;
-            _retryPolicy = new RetryPolicy<ServiceBusTransientErrorDetectionStrategy>(RetryStrategy.DefaultClientRetryCount);
-            _retryPolicy.Retrying += _retryPolicy_Retrying;
             _connectionResolver = new ConnectionResolver(senderSettings);
         }
 
@@ -81,7 +76,7 @@ namespace PB.ITOps.Messaging.PatSender
                 if ((batchSize + size) > MaxBatchSizeInBytes)
                 {
                     // Send current batch
-                    await SendBatch(topicClient, batchList, batchSize, totalMessageCount);
+                    await SendBatch(topicClient, batchList, totalMessageCount);
 
                     // Initialize a new batch
                     batchList = new List<BrokeredMessage> { brokeredMessage };
@@ -96,19 +91,16 @@ namespace PB.ITOps.Messaging.PatSender
             }
 
             // The final batch is sent outside of the loop
-            await SendBatch(topicClient, batchList, batchSize, totalMessageCount);
+            await SendBatch(topicClient, batchList, totalMessageCount);
         }
 
-        private async Task SendBatch(TopicClient topicClient, List<BrokeredMessage> messages, long batchSize, int totalMessageCount)
+        private async Task SendBatch(TopicClient topicClient, List<BrokeredMessage> messages, int totalMessageCount)
         {
             try
             {
-                //clone required within retry policy, otherwise retry will fail with "brokered message '{id}' has already been consumed"
-                await _retryPolicy.ExecuteAction(async () =>
-                {
-                    var clonedMessages = messages.Select(m => m.Clone()).ToList();
-                    await topicClient.SendBatchAsync(clonedMessages);
-                });
+                //clone required otherwise retry on failover connection will fail with "brokered message '{id}' has already been consumed"
+                var clonedMessages = messages.Select(m => m.Clone()).ToList();
+                await topicClient.SendBatchAsync(clonedMessages);
             }
             catch (Exception exc)
             {
@@ -118,11 +110,6 @@ namespace PB.ITOps.Messaging.PatSender
 
                 throw;
             }
-        }
-
-        private void _retryPolicy_Retrying(object sender, RetryingEventArgs e)
-        {
-            _log.Info($"MessageSender failed to send, attempting to retry because of {e.LastException.Message}");
         }
     }
 }

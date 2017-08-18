@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Microsoft.ServiceBus;
 using Microsoft.ServiceBus.Messaging;
 
 namespace PB.ITOps.Messaging.PatSender
@@ -24,6 +25,7 @@ namespace PB.ITOps.Messaging.PatSender
                 }
 
                 var topicClient = TopicClient.CreateFromConnectionString(connectionString, topicName);
+                topicClient.RetryPolicy = RetryPolicy.Default;
                 Clients.Add(connectionString, topicClient);
                 return topicClient;
             }
