@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFrameworks>net452;net462</TargetFrameworks>
     <PackageId>PB.ITOps.Messaging.PatSender</PackageId>
     <Description>Purplebricks message sending infrastructure</Description>
     <Company>Purplebricks</Company>
