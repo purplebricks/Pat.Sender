@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.ServiceBus.Messaging;
+using PB.ITOps.Messaging.PatSender.Extensions;
+using PB.ITOps.Messaging.PatSender.MessageGeneration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.ServiceBus.Messaging;
-using PB.ITOps.Messaging.PatSender.Extensions;
-using PB.ITOps.Messaging.PatSender.MessageGeneration;
 
 namespace PB.ITOps.Messaging.PatSender
 {
@@ -13,11 +13,13 @@ namespace PB.ITOps.Messaging.PatSender
         private readonly IMessageSender _messageSender;
         private readonly IMessageGenerator _messageGenerator;
         private readonly string _correlationId;
+        private readonly IDictionary<string, string> _customProperties;
 
-        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, string correlationId = null)
+        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, string correlationId, IDictionary<string, string> customProperties = null)
         {
             _messageSender = messageSender;
             _messageGenerator = messageGenerator;
+            _customProperties = customProperties;
             _correlationId = correlationId;
         }
 
@@ -41,7 +43,7 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the correlation id on each message if specified.
         /// </summary>
         /// <typeparam name="TEvent"></typeparam>
-        /// <param name="message"></param>
+        /// <param name="messages"></param>
         /// <returns></returns>
         public async Task PublishEvents<TEvent>(IEnumerable<TEvent> messages) where TEvent : class
         {
@@ -61,6 +63,14 @@ namespace PB.ITOps.Messaging.PatSender
             brokeredMessage.ContentType = messageType.SimpleQualifiedName();
             brokeredMessage.Properties["MessageType"] = messageType.FullName;
             brokeredMessage.PopulateCorrelationId(_correlationId);
+
+            if (_customProperties != null)
+            {
+                foreach (var customerProperty in _customProperties)
+                {
+                    brokeredMessage.Properties[customerProperty.Key] = customerProperty.Value;
+                }
+            }
 
             return brokeredMessage;
         }
