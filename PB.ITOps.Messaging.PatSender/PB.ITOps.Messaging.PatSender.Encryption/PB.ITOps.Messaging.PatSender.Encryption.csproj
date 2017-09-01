@@ -5,10 +5,10 @@
     <Description>Purplebricks support for sending encrypted messages</Description>
     <Company>Purplebricks</Company>
     <buildCounter Condition=" '$(buildCounter)' == '' ">0</buildCounter>
-    <Version>0.1.$(buildCounter)</Version>
+    <Version>0.2.$(buildCounter)</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="PB.ITOps.Messaging.DataProtection" Version="0.1.1" />
-    <PackageReference Include="PB.ITOps.Messaging.PatSender" Version="0.4.21" />
+    <PackageReference Include="PB.ITOps.Messaging.DataProtection" Version="0.1.2" />
+    <PackageReference Include="PB.ITOps.Messaging.PatSender" Version="0.5.22" />
   </ItemGroup>
 </Project>
