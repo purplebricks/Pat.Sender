@@ -51,7 +51,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         }
 
         [Fact]
-        public async Task WhenPublishEvent_Adds_CustomProperty()
+        public async Task WhenPublishEvent_Adds_CustomConstructorProperty()
         {
             var testKey = "testKey";
             var testValue = "test value";
@@ -62,6 +62,23 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messageSender = Substitute.For<IMessageSender>();
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString(), customProperties);
             await messagePublisher.PublishEvent(new Event1());
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
+        }
+
+        [Fact]
+        public async Task WhenPublishEvent_Adds_CustomMethodProperty()
+        {
+            var testKey = "testKey";
+            var testValue = "test value";
+            var customProperties = new Dictionary<string, string>
+            {
+                {testKey, testValue}
+            };
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            await messagePublisher.PublishEvent(new Event1(), customProperties);
             await messageSender.Received(1)
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
                     p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));

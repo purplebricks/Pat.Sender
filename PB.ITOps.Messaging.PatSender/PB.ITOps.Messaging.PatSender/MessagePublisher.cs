@@ -30,10 +30,11 @@ namespace PB.ITOps.Messaging.PatSender
         /// </summary>
         /// <typeparam name="TEvent"></typeparam>
         /// <param name="message"></param>
+        /// <param name="additionalProperties"></param>
         /// <returns></returns>
-        public async Task PublishEvent<TEvent>(TEvent message) where TEvent : class
+        public async Task PublishEvent<TEvent>(TEvent message, IDictionary<string, string> additionalProperties = null) where TEvent : class
         {
-            var brokeredMessage = GenerateMessage(message);
+            var brokeredMessage = GenerateMessage(message, additionalProperties);
             await _messageSender.SendMessages(new[] {brokeredMessage});
         }
 
@@ -44,17 +45,18 @@ namespace PB.ITOps.Messaging.PatSender
         /// </summary>
         /// <typeparam name="TEvent"></typeparam>
         /// <param name="messages"></param>
+        /// <param name="additionalProperties"></param>
         /// <returns></returns>
-        public async Task PublishEvents<TEvent>(IEnumerable<TEvent> messages) where TEvent : class
+        public async Task PublishEvents<TEvent>(IEnumerable<TEvent> messages, IDictionary<string, string> additionalProperties = null) where TEvent : class
         {
-            var brokeredMessages = GenerateMessages(messages);
+            var brokeredMessages = GenerateMessages(messages, additionalProperties);
             await _messageSender.SendMessages(brokeredMessages);
         }
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages)
-            => messages.Select(GenerateMessage);
+        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null)
+            => messages.Select(message => GenerateMessage(message, additionalProperties));
 
-        private BrokeredMessage GenerateMessage(object message)
+        private BrokeredMessage GenerateMessage(object message, IDictionary<string, string> additionalProperties)
         {
             var brokeredMessage = _messageGenerator.GenerateBrokeredMessage(message);
 
@@ -63,14 +65,8 @@ namespace PB.ITOps.Messaging.PatSender
             brokeredMessage.ContentType = messageType.SimpleQualifiedName();
             brokeredMessage.Properties["MessageType"] = messageType.FullName;
             brokeredMessage.PopulateCorrelationId(_correlationId);
-
-            if (_customProperties != null)
-            {
-                foreach (var customerProperty in _customProperties)
-                {
-                    brokeredMessage.Properties[customerProperty.Key] = customerProperty.Value;
-                }
-            }
+            brokeredMessage.AddProperties(_customProperties);
+            brokeredMessage.AddProperties(additionalProperties);
 
             return brokeredMessage;
         }
