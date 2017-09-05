@@ -83,5 +83,38 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
                     p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
         }
+
+        [Fact]
+        public async Task ScheduleEvent_WhenScheduledEnqueueTimeProvided_ThenMessageIsScheduledForSpecifiedTime()
+        {
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var enqueueTime = DateTime.UtcNow.AddMinutes(10);
+
+            await messagePublisher.ScheduleEvent(new Event1(), enqueueTime);
+
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
+                    t.Any(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
+        }
+
+        [Fact]
+        public async Task ScheduleEvents_WhenScheduledEnqueueTimeProvided_ThenAllMessagesAreScheduledForSpecifiedTime()
+        {
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var enqueueTime = DateTime.UtcNow.AddMinutes(10);
+            IEnumerable<object> events = new List<object>
+            {
+                new Event1(),
+                new Event2()
+            };
+
+            await messagePublisher.ScheduleEvents(events, enqueueTime);
+
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
+                    t.All(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
+        }
     }
 }
