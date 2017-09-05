@@ -53,8 +53,53 @@ namespace PB.ITOps.Messaging.PatSender
             await _messageSender.SendMessages(brokeredMessages);
         }
 
+        /// <summary>
+        /// Schedules a single event to be published after a delay, sending it directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event type
+        /// Sets the correlation id on the message if specified.
+        /// Schedules the message to be enqueued for delivery at the specified time (UTC).
+        /// </summary>
+        /// <typeparam name="TEvent"></typeparam>
+        /// <param name="message"></param>
+        /// <param name="scheduledEnqueueTimeUtc"></param>
+        /// <param name="additionalProperties"></param>
+        /// <returns></returns>
+        public async Task ScheduleEvent<TEvent>(TEvent message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        {
+            var brokeredMessage = GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties);
+            await _messageSender.SendMessages(new[] { brokeredMessage });
+        }
+
+        /// <summary>
+        /// Schedules a collection of events to be published after a delay, sending them directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event types
+        /// Sets the correlation id on each message if specified.
+        /// Schedules each message to be enqueued for delivery at the specified time (UTC).
+        /// </summary>
+        /// <typeparam name="TEvent"></typeparam>
+        /// <param name="messages"></param>
+        /// <param name="scheduledEnqueueTimeUtc"></param>
+        /// <param name="additionalProperties"></param>
+        /// <returns></returns>
+        public async Task ScheduleEvents<TEvent>(IEnumerable<TEvent> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        {
+            var brokeredMessages = GenerateMessages(messages, scheduledEnqueueTimeUtc, additionalProperties);
+            await _messageSender.SendMessages(brokeredMessages);
+        }
+
         private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null)
             => messages.Select(message => GenerateMessage(message, additionalProperties));
+
+        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties)
+            => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties));
+
+        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties)
+        {
+            var brokeredMessage = GenerateMessage(message, additionalProperties);
+            brokeredMessage.ScheduledEnqueueTimeUtc = scheduledEnqueueTimeUtc;
+
+            return brokeredMessage;
+        }
 
         private BrokeredMessage GenerateMessage(object message, IDictionary<string, string> additionalProperties)
         {
