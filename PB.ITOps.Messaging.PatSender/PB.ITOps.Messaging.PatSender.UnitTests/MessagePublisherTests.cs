@@ -116,5 +116,27 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
                     t.All(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
         }
+
+        [Fact]
+        public async Task SendCommand_WhenSendingCommand_SpecificSubscriberIsSet()
+        {
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            await messagePublisher.SendCommand(new Event1(), "TestSubscriber");
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber"))));
+        }
+
+        [Fact]
+        public async Task SendCommand_WhenSendingMultipleCommands_SpecificSubscriberIsSetOnAllCommands()
+        {
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            await messagePublisher.SendCommands(new[] {new Event1(), new Event1()}, "TestSubscriber");
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Count(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber")) == 2));
+        }
     }
 }

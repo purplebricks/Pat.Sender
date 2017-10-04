@@ -34,7 +34,7 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns></returns>
         public async Task PublishEvent<TEvent>(TEvent message, IDictionary<string, string> additionalProperties = null) where TEvent : class
         {
-            var brokeredMessage = GenerateMessage(message, additionalProperties);
+            var brokeredMessage = GenerateMessage(message, additionalProperties, null);
             await _messageSender.SendMessages(new[] {brokeredMessage});
         }
 
@@ -52,6 +52,40 @@ namespace PB.ITOps.Messaging.PatSender
             var brokeredMessages = GenerateMessages(messages, additionalProperties);
             await _messageSender.SendMessages(brokeredMessages);
         }
+
+        /// <summary>
+        /// Sends a single command to the specified subscriber.
+        /// Sets the contentType and messageType based on the concrete event type
+        /// Sets the correlation id on the message if specified.
+        /// </summary>
+        /// <typeparam name="TEvent"></typeparam>
+        /// <param name="command"></param>
+        /// <param name="subscriber"></param>
+        /// <param name="additionalProperties"></param>
+        /// <returns></returns>
+        public async Task SendCommand<TEvent>(TEvent command, string subscriber, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        {
+            var brokeredMessage = GenerateMessage(command, additionalProperties, subscriber);
+            await _messageSender.SendMessages(new[] { brokeredMessage });
+
+        }
+
+        /// <summary>
+        /// Sends a collection of commands to the specified subscriber.
+        /// Sets the contentType and messageType based on the concrete event types
+        /// Sets the correlation id on each message if specified.
+        /// </summary>
+        /// <typeparam name="TEvent"></typeparam>
+        /// <param name="commands"></param>
+        /// <param name="subscriber"></param>
+        /// <param name="additionalProperties"></param>
+        /// <returns></returns>
+        public async Task SendCommands<TEvent>(IEnumerable<TEvent> commands, string subscriber, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        {
+            var brokeredMessages = GenerateMessages(commands, additionalProperties, subscriber);
+            await _messageSender.SendMessages(brokeredMessages);
+        }
+
 
         /// <summary>
         /// Schedules a single event to be published after a delay, sending it directly to the service bus topic.
@@ -87,21 +121,21 @@ namespace PB.ITOps.Messaging.PatSender
             await _messageSender.SendMessages(brokeredMessages);
         }
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null)
-            => messages.Select(message => GenerateMessage(message, additionalProperties));
+        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null, string subscriber = null)
+            => messages.Select(message => GenerateMessage(message, additionalProperties, subscriber));
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties)
-            => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties));
+        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
+            => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties, subscriber));
 
-        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties)
+        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
         {
-            var brokeredMessage = GenerateMessage(message, additionalProperties);
+            var brokeredMessage = GenerateMessage(message, additionalProperties, subscriber);
             brokeredMessage.ScheduledEnqueueTimeUtc = scheduledEnqueueTimeUtc;
 
             return brokeredMessage;
         }
 
-        private BrokeredMessage GenerateMessage(object message, IDictionary<string, string> additionalProperties)
+        private BrokeredMessage GenerateMessage(object message, IDictionary<string, string> additionalProperties, string subscriber)
         {
             var brokeredMessage = _messageGenerator.GenerateBrokeredMessage(message);
 
@@ -112,6 +146,10 @@ namespace PB.ITOps.Messaging.PatSender
             brokeredMessage.PopulateCorrelationId(_correlationId);
             brokeredMessage.AddProperties(_customProperties);
             brokeredMessage.AddProperties(additionalProperties);
+            if (!string.IsNullOrEmpty(subscriber))
+            {
+                brokeredMessage.Properties["SpecificSubscriber"] = subscriber;
+            }
 
             return brokeredMessage;
         }
