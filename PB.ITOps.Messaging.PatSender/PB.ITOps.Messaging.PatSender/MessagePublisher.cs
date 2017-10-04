@@ -1,4 +1,4 @@
-﻿using Microsoft.ServiceBus.Messaging;
+﻿using Microsoft.Azure.ServiceBus;
 using PB.ITOps.Messaging.PatSender.Extensions;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
 using System;
@@ -121,13 +121,13 @@ namespace PB.ITOps.Messaging.PatSender
             await _messageSender.SendMessages(brokeredMessages);
         }
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null, string subscriber = null)
+        private IEnumerable<Message> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null, string subscriber = null)
             => messages.Select(message => GenerateMessage(message, additionalProperties, subscriber));
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
+        private IEnumerable<Message> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
             => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties, subscriber));
 
-        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
+        private Message GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
         {
             var brokeredMessage = GenerateMessage(message, additionalProperties, subscriber);
             brokeredMessage.ScheduledEnqueueTimeUtc = scheduledEnqueueTimeUtc;
@@ -135,20 +135,20 @@ namespace PB.ITOps.Messaging.PatSender
             return brokeredMessage;
         }
 
-        private BrokeredMessage GenerateMessage(object message, IDictionary<string, string> additionalProperties, string subscriber)
+        private Message GenerateMessage(object message, IDictionary<string, string> additionalProperties, string subscriber)
         {
             var brokeredMessage = _messageGenerator.GenerateBrokeredMessage(message);
 
             var messageType = message.GetType();
             brokeredMessage.MessageId = Guid.NewGuid().ToString();
             brokeredMessage.ContentType = messageType.SimpleQualifiedName();
-            brokeredMessage.Properties["MessageType"] = messageType.FullName;
+            brokeredMessage.UserProperties["MessageType"] = messageType.FullName;
             brokeredMessage.PopulateCorrelationId(_correlationId);
             brokeredMessage.AddProperties(_customProperties);
             brokeredMessage.AddProperties(additionalProperties);
             if (!string.IsNullOrEmpty(subscriber))
             {
-                brokeredMessage.Properties["SpecificSubscriber"] = subscriber;
+                brokeredMessage.UserProperties["SpecificSubscriber"] = subscriber;
             }
 
             return brokeredMessage;

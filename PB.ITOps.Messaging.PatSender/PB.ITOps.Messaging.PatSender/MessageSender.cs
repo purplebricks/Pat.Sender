@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using log4net;
-using Microsoft.ServiceBus.Messaging;
+using Microsoft.Azure.ServiceBus;
 using PB.ITOps.Messaging.PatSender.Extensions;
 
 namespace PB.ITOps.Messaging.PatSender
@@ -33,7 +33,7 @@ namespace PB.ITOps.Messaging.PatSender
         /// </summary>
         /// <param name="messages"></param>
         /// <returns></returns>
-        public async Task SendMessages(IEnumerable<BrokeredMessage> messages)
+        public async Task SendMessages(IEnumerable<Message> messages)
         {
             var messagesToSend = messages.ToList();
             bool retryOnFailOver;
@@ -64,9 +64,9 @@ namespace PB.ITOps.Messaging.PatSender
             } while (retryOnFailOver);
         }
 
-        private async Task SendPartitionedBatch(TopicClient topicClient, IList<BrokeredMessage> brokeredMessageList)
+        private async Task SendPartitionedBatch(TopicClient topicClient, IList<Message> brokeredMessageList)
         {
-            var batchList = new List<BrokeredMessage>();
+            var batchList = new List<Message>();
             long batchSize = 0;
             var totalMessageCount = brokeredMessageList.Count;
 
@@ -79,7 +79,7 @@ namespace PB.ITOps.Messaging.PatSender
                     await SendBatch(topicClient, batchList, totalMessageCount);
 
                     // Initialize a new batch
-                    batchList = new List<BrokeredMessage> { brokeredMessage };
+                    batchList = new List<Message> { brokeredMessage };
                     batchSize = size;
                 }
                 else
@@ -94,13 +94,13 @@ namespace PB.ITOps.Messaging.PatSender
             await SendBatch(topicClient, batchList, totalMessageCount);
         }
 
-        private async Task SendBatch(TopicClient topicClient, List<BrokeredMessage> messages, int totalMessageCount)
+        private async Task SendBatch(TopicClient topicClient, List<Message> messages, int totalMessageCount)
         {
             try
             {
                 //clone required otherwise retry on failover connection will fail with "brokered message '{id}' has already been consumed"
                 var clonedMessages = messages.Select(m => m.Clone()).ToList();
-                await topicClient.SendBatchAsync(clonedMessages);
+                await topicClient.SendAsync(clonedMessages);                
             }
             catch (Exception exc)
             {

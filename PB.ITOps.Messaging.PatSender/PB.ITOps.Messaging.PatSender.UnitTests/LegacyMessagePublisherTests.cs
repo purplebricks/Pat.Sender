@@ -1,4 +1,4 @@
-﻿using Microsoft.ServiceBus.Messaging;
+﻿using Microsoft.Azure.ServiceBus;
 using NSubstitute;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -19,8 +19,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.PublishLegacyMessage(new Event1(), "WotISaid", "NotThis");
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                p.Any(m => ((string)m.Properties["MessageType"]).Equals("WotISaid"))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                p.Any(m => ((string)m.UserProperties["MessageType"]).Equals("WotISaid"))));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.PublishLegacyMessage(new Event1(), "NotThis", "IAskedForThis");
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
                 p.Any(m => m.ContentType.Equals("IAskedForThis"))));
         }
     }

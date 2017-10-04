@@ -1,13 +1,13 @@
-﻿using Microsoft.ServiceBus.Messaging;
+﻿using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
 
 namespace PB.ITOps.Messaging.PatSender.MessageGeneration
 {
     public class MessageGenerator: IMessageGenerator
     {
-        public BrokeredMessage GenerateBrokeredMessage(object message)
+        public Message GenerateBrokeredMessage(object message)
         {
-            return new BrokeredMessage(JsonConvert.SerializeObject(message));
+            return new Message(MessageEncoding.Instance.GetBytes(JsonConvert.SerializeObject(message)));
         }
     }
 }

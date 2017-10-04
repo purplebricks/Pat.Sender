@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFrameworks>net462</TargetFrameworks>
     <PackageId>PB.ITOps.Messaging.PatSender.Encryption</PackageId>
     <Description>Purplebricks support for sending encrypted messages</Description>
     <Company>Purplebricks</Company>
