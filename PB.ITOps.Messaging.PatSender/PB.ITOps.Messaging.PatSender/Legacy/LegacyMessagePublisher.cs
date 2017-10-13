@@ -1,4 +1,4 @@
-﻿using Microsoft.Azure.ServiceBus;
+﻿using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
 using PB.ITOps.Messaging.PatSender.Extensions;
 using System;
@@ -23,15 +23,15 @@ namespace PB.ITOps.Messaging.PatSender.Legacy
             await _messageSender.SendMessages(new[] { brokeredMessage });
         }
 
-        private Message GenerateMessage(object message, string legacyMessageType, string legacyContentType)
+        private BrokeredMessage GenerateMessage(object message, string legacyMessageType, string legacyContentType)
         {
-            var brokeredMessage = new Message(MessageEncoding.Instance.GetBytes(JsonConvert.SerializeObject(message)))
+            var brokeredMessage = new BrokeredMessage(JsonConvert.SerializeObject(message))
             {
                 MessageId = Guid.NewGuid().ToString(),
                 ContentType = legacyContentType
             };
 
-            brokeredMessage.UserProperties["MessageType"] = legacyMessageType;
+            brokeredMessage.Properties["MessageType"] = legacyMessageType;
             brokeredMessage.PopulateCorrelationId(_correlationId);
 
             return brokeredMessage;

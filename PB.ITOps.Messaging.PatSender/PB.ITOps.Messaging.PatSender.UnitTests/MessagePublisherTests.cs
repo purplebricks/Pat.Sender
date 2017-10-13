@@ -1,5 +1,5 @@
 ﻿using System;
-using Microsoft.Azure.ServiceBus;
+using Microsoft.ServiceBus.Messaging;
 using NSubstitute;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
 using System.Collections.Generic;
@@ -28,8 +28,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
             await messagePublisher.PublishEvent(new Event1());
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(p => 
-                p.Any(m => ((string)m.UserProperties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p => 
+                p.Any(m => ((string)m.Properties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
         }
 
         [Fact]
@@ -46,8 +46,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.PublishEvents(events);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
-                    p.Any(m => ((string)m.UserProperties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
         }
 
         [Fact]
@@ -63,8 +63,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString(), customProperties);
             await messagePublisher.PublishEvent(new Event1());
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
-                    p.Any(m => ((string)m.UserProperties[testKey]).Equals(testValue))));
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
         }
 
         [Fact]
@@ -80,8 +80,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
             await messagePublisher.PublishEvent(new Event1(), customProperties);
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
-                    p.Any(m => ((string)m.UserProperties[testKey]).Equals(testValue))));
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.ScheduleEvent(new Event1(), enqueueTime);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(t =>
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
                     t.Any(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
         }
 
@@ -113,7 +113,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.ScheduleEvents(events, enqueueTime);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(t =>
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
                     t.All(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
         }
 
@@ -124,8 +124,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
             await messagePublisher.SendCommand(new Event1(), "TestSubscriber");
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
-                    p.Any(m => ((string)m.UserProperties["SpecificSubscriber"]).Equals("TestSubscriber"))));
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber"))));
         }
 
         [Fact]
@@ -135,8 +135,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
             await messagePublisher.SendCommands(new[] {new Event1(), new Event1()}, "TestSubscriber");
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
-                    p.Count(m => ((string)m.UserProperties["SpecificSubscriber"]).Equals("TestSubscriber")) == 2));
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Count(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber")) == 2));
         }
     }
 }

@@ -1,39 +1,39 @@
 using System.Linq;
-using Microsoft.Azure.ServiceBus;
+using Microsoft.ServiceBus.Messaging;
 using System;
 using System.Collections.Generic;
 
 namespace PB.ITOps.Messaging.PatSender.Extensions
 {
-    public static class MessageExtensions
+    public static class BrokeredMessageExtensions
     {
-        public static Message AddProperties(this Message message, IDictionary<string, string> additionalProperties)
+        public static BrokeredMessage AddProperties(this BrokeredMessage message, IDictionary<string, string> additionalProperties)
         {
             foreach (var additionalProperty in additionalProperties ?? new Dictionary<string, string>())
             {
-                message.UserProperties[additionalProperty.Key] = additionalProperty.Value;
+                message.Properties[additionalProperty.Key] = additionalProperty.Value;
             }
 
             return message;
         }
 
-        public static Message PopulateCorrelationId(this Message message, string correlationId)
+        public static BrokeredMessage PopulateCorrelationId(this BrokeredMessage message, string correlationId)
         {
             if (!string.IsNullOrEmpty(correlationId))
             {
-                message.UserProperties["PBCorrelationId"] = correlationId;
+                message.Properties["PBCorrelationId"] = correlationId;
             }
 
             return message;
         }
 
-        public static long GetSize(this Message message)
+        public static long GetSize(this BrokeredMessage message)
         {
             long estimatedSize = 61;
             int minimumFieldSize = 8;
 
             estimatedSize += message.ContentType.Length;
-            foreach (var propertyPair in message.UserProperties.AsEnumerable())
+            foreach (var propertyPair in message.Properties.AsEnumerable())
             {
                 estimatedSize += propertyPair.Key.Length + 5;
                 if (propertyPair.Value != null)

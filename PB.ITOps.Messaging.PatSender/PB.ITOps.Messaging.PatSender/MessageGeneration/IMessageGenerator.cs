@@ -1,9 +1,9 @@
-﻿using Microsoft.Azure.ServiceBus;
+﻿using Microsoft.ServiceBus.Messaging;
 
 namespace PB.ITOps.Messaging.PatSender.MessageGeneration
 {
     public interface IMessageGenerator
     {
-        Message GenerateBrokeredMessage(object message);
+        BrokeredMessage GenerateBrokeredMessage(object message);
     }
 }
