@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
+using Microsoft.ServiceBus.Messaging;
 
 namespace PB.ITOps.Messaging.PatSender
 {
     public interface IMessageSender
     {
-        Task SendMessages(IEnumerable<Message> messages);
+        Task SendMessages(IEnumerable<BrokeredMessage> messages);
     }
 }
