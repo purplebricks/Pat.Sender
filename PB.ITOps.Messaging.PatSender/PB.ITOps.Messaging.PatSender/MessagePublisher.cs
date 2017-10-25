@@ -1,4 +1,5 @@
 ﻿using Microsoft.ServiceBus.Messaging;
+using PB.ITOps.Messaging.PatSender.Correlation;
 using PB.ITOps.Messaging.PatSender.Extensions;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
 using System;
@@ -12,15 +13,24 @@ namespace PB.ITOps.Messaging.PatSender
     {
         private readonly IMessageSender _messageSender;
         private readonly IMessageGenerator _messageGenerator;
-        private readonly string _correlationId;
+        private readonly ICorrelationIdProvider _correlationIdProvider;
         private readonly IDictionary<string, string> _customProperties;
 
+        [Obsolete("To simplify StructureMap IoC setup, this constructor will be removed in a future version.")]
         public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, string correlationId, IDictionary<string, string> customProperties = null)
         {
             _messageSender = messageSender;
             _messageGenerator = messageGenerator;
             _customProperties = customProperties;
-            _correlationId = correlationId;
+            _correlationIdProvider = new LiteralCorrelationIdProvider(correlationId);
+        }
+
+        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, ICorrelationIdProvider correlationIdProvider, IDictionary<string, string> customProperties = null)
+        {
+            _messageSender = messageSender;
+            _messageGenerator = messageGenerator;
+            _customProperties = customProperties;
+            _correlationIdProvider = correlationIdProvider;
         }
 
         /// <summary>
@@ -67,7 +77,6 @@ namespace PB.ITOps.Messaging.PatSender
         {
             var brokeredMessage = GenerateMessage(command, additionalProperties, subscriber);
             await _messageSender.SendMessages(new[] { brokeredMessage });
-
         }
 
         /// <summary>
@@ -143,7 +152,7 @@ namespace PB.ITOps.Messaging.PatSender
             brokeredMessage.MessageId = Guid.NewGuid().ToString();
             brokeredMessage.ContentType = messageType.SimpleQualifiedName();
             brokeredMessage.Properties["MessageType"] = messageType.FullName;
-            brokeredMessage.PopulateCorrelationId(_correlationId);
+            brokeredMessage.PopulateCorrelationId(_correlationIdProvider.CorrelationId);
             brokeredMessage.AddProperties(_customProperties);
             brokeredMessage.AddProperties(additionalProperties);
             if (!string.IsNullOrEmpty(subscriber))
