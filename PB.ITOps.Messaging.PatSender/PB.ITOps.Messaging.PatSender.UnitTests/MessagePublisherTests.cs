@@ -1,7 +1,9 @@
-﻿using System;
-using Microsoft.ServiceBus.Messaging;
+﻿using Microsoft.ServiceBus.Messaging;
 using NSubstitute;
+using PB.ITOps.Messaging.PatSender.Correlation;
+using PB.ITOps.Messaging.PatSender.Extensions;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,12 +13,10 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
 {
     public class Event1
     {
-        
     }
 
     public class Event2
     {
-
     }
 
     public class MessagePublisherTests
@@ -25,7 +25,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         public async Task WhenPublishEvent_MessageTypeIsFullEventName()
         {
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.PublishEvent(new Event1());
             await messageSender.Received(1)
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p => 
@@ -36,7 +36,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         public async Task WhenPublishEvents_MessageTypeIsFullEventName()
         {
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var messagePublisher = CreatePublisher(messageSender);
 
             IEnumerable<object> events = new List<object>
             {
@@ -53,14 +53,14 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         [Fact]
         public async Task WhenPublishEvent_Adds_CustomConstructorProperty()
         {
-            var testKey = "testKey";
-            var testValue = "test value";
+            const string testKey = "testKey";
+            const string testValue = "test value";
             var customProperties = new Dictionary<string, string>
             {
                 {testKey, testValue}
             };
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString(), customProperties);
+            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), new MessageProperties(new NewCorrelationIdProvider()) { CustomProperties = customProperties });
             await messagePublisher.PublishEvent(new Event1());
             await messageSender.Received(1)
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
@@ -70,25 +70,78 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         [Fact]
         public async Task WhenPublishEvent_Adds_CustomMethodProperty()
         {
-            var testKey = "testKey";
-            var testValue = "test value";
+            const string testKey = "testKey";
+            const string testValue = "test value";
             var customProperties = new Dictionary<string, string>
             {
                 {testKey, testValue}
             };
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
-            await messagePublisher.PublishEvent(new Event1(), customProperties);
+            var messagePublisher = CreatePublisher(messageSender);
+            await messagePublisher.PublishEvent(new Event1(), new MessageProperties(new NewCorrelationIdProvider()) { CustomProperties = customProperties });
             await messageSender.Received(1)
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
                     p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
         }
 
         [Fact]
+        public async Task WhenPublishEventsWithProperties_Adds_CustomProperty()
+        {
+            const string testKey = "testKey";
+            const string testValue = "test value";
+            var customProperties = new Dictionary<string, string>
+            {
+                {testKey, testValue}
+            };
+
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = CreatePublisher(messageSender);
+            await messagePublisher.PublishEventsWithProperties(
+                new[]
+                {
+                    new EventWithProperties
+                    {
+                        Event = new Event1(),
+                        Properties = new MessageProperties(
+                            new NewCorrelationIdProvider())
+                        {
+                            CustomProperties = customProperties
+                        }
+                    }
+                });
+
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
+        }
+
+        [Fact]
+        public async Task WhenPublishEventsWithProperties_SetsCorrelationId()
+        {
+            const string correlationId = "AAA";
+
+            var messageSender = Substitute.For<IMessageSender>();
+            var messagePublisher = CreatePublisher(messageSender);
+            await messagePublisher.PublishEventsWithProperties(
+                new[]
+                {
+                    new EventWithProperties
+                    {
+                        Event = new Event1(),
+                        Properties = new MessageProperties(new LiteralCorrelationIdProvider(correlationId))
+                    }
+                });
+
+            await messageSender.Received(1)
+                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                    p.Any(m => m.GetCorrelationId().Equals(correlationId))));
+        }
+
+        [Fact]
         public async Task ScheduleEvent_WhenScheduledEnqueueTimeProvided_ThenMessageIsScheduledForSpecifiedTime()
         {
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var messagePublisher = CreatePublisher(messageSender);
             var enqueueTime = DateTime.UtcNow.AddMinutes(10);
 
             await messagePublisher.ScheduleEvent(new Event1(), enqueueTime);
@@ -102,7 +155,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         public async Task ScheduleEvents_WhenScheduledEnqueueTimeProvided_ThenAllMessagesAreScheduledForSpecifiedTime()
         {
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var messagePublisher = CreatePublisher(messageSender);
             var enqueueTime = DateTime.UtcNow.AddMinutes(10);
             IEnumerable<object> events = new List<object>
             {
@@ -121,7 +174,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         public async Task SendCommand_WhenSendingCommand_SpecificSubscriberIsSet()
         {
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.SendCommand(new Event1(), "TestSubscriber");
             await messageSender.Received(1)
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
@@ -132,11 +185,14 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
         public async Task SendCommand_WhenSendingMultipleCommands_SpecificSubscriberIsSetOnAllCommands()
         {
             var messageSender = Substitute.For<IMessageSender>();
-            var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), Guid.NewGuid().ToString());
+            var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.SendCommands(new[] {new Event1(), new Event1()}, "TestSubscriber");
             await messageSender.Received(1)
                 .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
                     p.Count(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber")) == 2));
         }
+
+        private MessagePublisher CreatePublisher(IMessageSender messageSender)
+            => new MessagePublisher(messageSender, new MessageGenerator(), new MessageProperties(new NewCorrelationIdProvider()));
     }
 }

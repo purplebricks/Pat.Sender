@@ -5,7 +5,7 @@ using Microsoft.ServiceBus.Messaging;
 
 namespace PB.ITOps.Messaging.PatSender
 {
-    public class TopicClientResolver
+    public static class TopicClientResolver
     {
         private static readonly ConcurrentDictionary<string, object> Locks = new ConcurrentDictionary<string, object>();
         private static readonly Dictionary<string, TopicClient> Clients = new Dictionary<string, TopicClient>();

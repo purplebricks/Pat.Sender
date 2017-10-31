@@ -1,5 +1,4 @@
 ﻿using Microsoft.ServiceBus.Messaging;
-using PB.ITOps.Messaging.PatSender.Correlation;
 using PB.ITOps.Messaging.PatSender.Extensions;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
 using System;
@@ -13,24 +12,28 @@ namespace PB.ITOps.Messaging.PatSender
     {
         private readonly IMessageSender _messageSender;
         private readonly IMessageGenerator _messageGenerator;
-        private readonly ICorrelationIdProvider _correlationIdProvider;
-        private readonly IDictionary<string, string> _customProperties;
+        private readonly MessageProperties _defaultMessageProperties;
 
-        [Obsolete("To simplify StructureMap IoC setup, this constructor will be removed in a future version.")]
-        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, string correlationId, IDictionary<string, string> customProperties = null)
+        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, MessageProperties defaultMessageProperties)
         {
+            if (messageSender == null)
+            {
+                throw new ArgumentNullException(nameof(messageSender));
+            }
+
+            if (messageGenerator == null)
+            {
+                throw new ArgumentNullException(nameof(messageGenerator));
+            }
+
+            if (defaultMessageProperties == null)
+            {
+                throw new ArgumentNullException(nameof(defaultMessageProperties));
+            }
+
             _messageSender = messageSender;
             _messageGenerator = messageGenerator;
-            _customProperties = customProperties;
-            _correlationIdProvider = new LiteralCorrelationIdProvider(correlationId);
-        }
-
-        public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, ICorrelationIdProvider correlationIdProvider, IDictionary<string, string> customProperties = null)
-        {
-            _messageSender = messageSender;
-            _messageGenerator = messageGenerator;
-            _customProperties = customProperties;
-            _correlationIdProvider = correlationIdProvider;
+            _defaultMessageProperties = defaultMessageProperties;
         }
 
         /// <summary>
@@ -38,14 +41,13 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the contentType and messageType based on the concrete event type
         /// Sets the correlation id on the message if specified.
         /// </summary>
-        /// <typeparam name="TEvent"></typeparam>
-        /// <param name="message"></param>
-        /// <param name="additionalProperties"></param>
-        /// <returns></returns>
-        public async Task PublishEvent<TEvent>(TEvent message, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        /// <param name="event">The event to publish.</param>
+        /// <param name="eventSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/></param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task PublishEvent(object @event, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessage = GenerateMessage(message, additionalProperties, null);
-            await _messageSender.SendMessages(new[] {brokeredMessage});
+            var brokeredMessage = GenerateMessage(@event, eventSpecificProperties, null);
+            await _messageSender.SendMessages(new[] { brokeredMessage });
         }
 
         /// <summary>
@@ -53,13 +55,30 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the contentType and messageType based on the concrete event types
         /// Sets the correlation id on each message if specified.
         /// </summary>
-        /// <typeparam name="TEvent"></typeparam>
-        /// <param name="messages"></param>
-        /// <param name="additionalProperties"></param>
-        /// <returns></returns>
-        public async Task PublishEvents<TEvent>(IEnumerable<TEvent> messages, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        /// <param name="events">The set of events to publish.</param>
+        /// <param name="eventSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>. Apply to all events in this set.</param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task PublishEvents(IEnumerable<object> events, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessages = GenerateMessages(messages, additionalProperties);
+            var brokeredMessages = GenerateMessages(events, eventSpecificProperties);
+            await _messageSender.SendMessages(brokeredMessages);
+        }
+
+        /// <summary>
+        /// Publishes a collection of events, sending them directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event types
+        /// Sets the correlation id on each message if specified.
+        /// </summary>
+        /// <param name="events">The set of events to publish along with specific properties for each event.</param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task PublishEventsWithProperties(IEnumerable<EventWithProperties> events)
+        {
+            var brokeredMessages = events.Select(
+                messageWithProperties => GenerateMessage(
+                    messageWithProperties.Event,
+                    messageWithProperties.Properties,
+                    null));
+
             await _messageSender.SendMessages(brokeredMessages);
         }
 
@@ -68,14 +87,13 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the contentType and messageType based on the concrete event type
         /// Sets the correlation id on the message if specified.
         /// </summary>
-        /// <typeparam name="TEvent"></typeparam>
-        /// <param name="command"></param>
-        /// <param name="subscriber"></param>
-        /// <param name="additionalProperties"></param>
-        /// <returns></returns>
-        public async Task SendCommand<TEvent>(TEvent command, string subscriber, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        /// <param name="command">The command to send.</param>
+        /// <param name="subscriber">The name of the subscriber to send this command to.</param>
+        /// <param name="commandSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/></param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task SendCommand(object command, string subscriber, MessageProperties commandSpecificProperties = null)
         {
-            var brokeredMessage = GenerateMessage(command, additionalProperties, subscriber);
+            var brokeredMessage = GenerateMessage(command, commandSpecificProperties, subscriber);
             await _messageSender.SendMessages(new[] { brokeredMessage });
         }
 
@@ -84,17 +102,15 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the contentType and messageType based on the concrete event types
         /// Sets the correlation id on each message if specified.
         /// </summary>
-        /// <typeparam name="TEvent"></typeparam>
-        /// <param name="commands"></param>
-        /// <param name="subscriber"></param>
-        /// <param name="additionalProperties"></param>
-        /// <returns></returns>
-        public async Task SendCommands<TEvent>(IEnumerable<TEvent> commands, string subscriber, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        /// <param name="commands">A set of commands to send to the same subscriber.</param>
+        /// <param name="subscriber">The name of the subscriber to send these commands to.</param>
+        /// <param name="commandSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>.  Apply to all commands in the set.</param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task SendCommands(IEnumerable<object> commands, string subscriber, MessageProperties commandSpecificProperties = null)
         {
-            var brokeredMessages = GenerateMessages(commands, additionalProperties, subscriber);
+            var brokeredMessages = GenerateMessages(commands, commandSpecificProperties, subscriber);
             await _messageSender.SendMessages(brokeredMessages);
         }
-
 
         /// <summary>
         /// Schedules a single event to be published after a delay, sending it directly to the service bus topic.
@@ -102,14 +118,13 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the correlation id on the message if specified.
         /// Schedules the message to be enqueued for delivery at the specified time (UTC).
         /// </summary>
-        /// <typeparam name="TEvent"></typeparam>
-        /// <param name="message"></param>
-        /// <param name="scheduledEnqueueTimeUtc"></param>
-        /// <param name="additionalProperties"></param>
-        /// <returns></returns>
-        public async Task ScheduleEvent<TEvent>(TEvent message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        /// <param name="event">The event to trigger at a time in the future.</param>
+        /// <param name="scheduledEnqueueTimeUtc">The UTC time when the event will be published.</param>
+        /// <param name="eventSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>.</param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessage = GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties);
+            var brokeredMessage = GenerateMessage(@event, scheduledEnqueueTimeUtc, eventSpecificProperties);
             await _messageSender.SendMessages(new[] { brokeredMessage });
         }
 
@@ -119,32 +134,31 @@ namespace PB.ITOps.Messaging.PatSender
         /// Sets the correlation id on each message if specified.
         /// Schedules each message to be enqueued for delivery at the specified time (UTC).
         /// </summary>
-        /// <typeparam name="TEvent"></typeparam>
-        /// <param name="messages"></param>
-        /// <param name="scheduledEnqueueTimeUtc"></param>
-        /// <param name="additionalProperties"></param>
-        /// <returns></returns>
-        public async Task ScheduleEvents<TEvent>(IEnumerable<TEvent> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null) where TEvent : class
+        /// <param name="events">The set of events to trigger at a time in the future.</param>
+        /// <param name="scheduledEnqueueTimeUtc">The UTC time when the events will be published.</param>
+        /// <param name="eventSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>. Apply to all events in the set.</param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task ScheduleEvents(IEnumerable<object> events, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessages = GenerateMessages(messages, scheduledEnqueueTimeUtc, additionalProperties);
+            var brokeredMessages = GenerateMessages(events, scheduledEnqueueTimeUtc, eventSpecificProperties);
             await _messageSender.SendMessages(brokeredMessages);
         }
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, IDictionary<string, string> additionalProperties = null, string subscriber = null)
-            => messages.Select(message => GenerateMessage(message, additionalProperties, subscriber));
+        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, MessageProperties messageSpecificProperties = null, string subscriber = null)
+            => messages.Select(message => GenerateMessage(message, messageSpecificProperties, subscriber));
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
-            => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, additionalProperties, subscriber));
+        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, MessageProperties messageSpecificProperties = null, string subscriber = null)
+            => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, messageSpecificProperties, subscriber));
 
-        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, IDictionary<string, string> additionalProperties = null, string subscriber = null)
+        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, MessageProperties messageSpecificProperties = null, string subscriber = null)
         {
-            var brokeredMessage = GenerateMessage(message, additionalProperties, subscriber);
+            var brokeredMessage = GenerateMessage(message, messageSpecificProperties, subscriber);
             brokeredMessage.ScheduledEnqueueTimeUtc = scheduledEnqueueTimeUtc;
 
             return brokeredMessage;
         }
 
-        private BrokeredMessage GenerateMessage(object message, IDictionary<string, string> additionalProperties, string subscriber)
+        private BrokeredMessage GenerateMessage(object message, MessageProperties messageSpecificProperties, string subscriber)
         {
             var brokeredMessage = _messageGenerator.GenerateBrokeredMessage(message);
 
@@ -152,9 +166,14 @@ namespace PB.ITOps.Messaging.PatSender
             brokeredMessage.MessageId = Guid.NewGuid().ToString();
             brokeredMessage.ContentType = messageType.SimpleQualifiedName();
             brokeredMessage.Properties["MessageType"] = messageType.FullName;
-            brokeredMessage.PopulateCorrelationId(_correlationIdProvider.CorrelationId);
-            brokeredMessage.AddProperties(_customProperties);
-            brokeredMessage.AddProperties(additionalProperties);
+
+            brokeredMessage.PopulateCorrelationId(
+                messageSpecificProperties?.CorrelationIdProvider.CorrelationId
+                ?? _defaultMessageProperties.CorrelationIdProvider.CorrelationId);
+
+            brokeredMessage.AddProperties(_defaultMessageProperties.CustomProperties);
+            brokeredMessage.AddProperties(messageSpecificProperties?.CustomProperties);
+
             if (!string.IsNullOrEmpty(subscriber))
             {
                 brokeredMessage.Properties["SpecificSubscriber"] = subscriber;

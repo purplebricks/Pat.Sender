@@ -1,6 +1,4 @@
-﻿
-
-using PB.ITOps.Messaging.DataProtection;
+﻿using PB.ITOps.Messaging.DataProtection;
 
 namespace PB.ITOps.Messaging.PatSender.Encryption
 {

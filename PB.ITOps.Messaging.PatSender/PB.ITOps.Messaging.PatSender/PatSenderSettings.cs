@@ -10,20 +10,14 @@ namespace PB.ITOps.Messaging.PatSender
             UseDevelopmentTopic = true;
 	    }
 
-        private string _topicName;
-
         /// <summary>
         /// Name of topic where messages will be sent
         /// </summary>
-        public string TopicName
-        {
-            get => _topicName;
-            set => _topicName = value;
-        }
+        public string TopicName { get; set; }
 
         public string EffectiveTopicName
         {
-            get => UseDevelopmentTopic ? _topicName + Environment.MachineName : _topicName;
+            get => UseDevelopmentTopic ? TopicName + Environment.MachineName : TopicName;
         }
 
         /// <summary>

@@ -9,7 +9,12 @@ namespace PB.ITOps.Messaging.PatSender.Extensions
     {
         public static BrokeredMessage AddProperties(this BrokeredMessage message, IDictionary<string, string> additionalProperties)
         {
-            foreach (var additionalProperty in additionalProperties ?? new Dictionary<string, string>())
+            if (additionalProperties == null)
+            {
+                return message;
+            }
+
+            foreach (var additionalProperty in additionalProperties)
             {
                 message.Properties[additionalProperty.Key] = additionalProperty.Value;
             }
@@ -27,10 +32,15 @@ namespace PB.ITOps.Messaging.PatSender.Extensions
             return message;
         }
 
+        public static string GetCorrelationId(this BrokeredMessage message)
+        {
+            return message.Properties["PBCorrelationId"]?.ToString();
+        }
+
         public static long GetSize(this BrokeredMessage message)
         {
             long estimatedSize = 61;
-            int minimumFieldSize = 8;
+            const int minimumFieldSize = 8;
 
             estimatedSize += message.ContentType.Length;
             foreach (var propertyPair in message.Properties.AsEnumerable())
