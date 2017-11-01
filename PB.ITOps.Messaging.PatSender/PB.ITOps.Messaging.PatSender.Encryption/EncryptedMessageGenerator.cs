@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Microsoft.AspNetCore.DataProtection;
+﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
 using PB.ITOps.Messaging.DataProtection;
