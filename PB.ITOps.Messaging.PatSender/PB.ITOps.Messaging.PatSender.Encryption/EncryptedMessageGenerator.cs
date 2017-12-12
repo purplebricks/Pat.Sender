@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.DataProtection;
-using Microsoft.ServiceBus.Messaging;
+﻿using System.Text;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
 using PB.ITOps.Messaging.DataProtection;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
@@ -16,13 +17,18 @@ namespace PB.ITOps.Messaging.PatSender.Encryption
             _dataProtector = provider.CreateProtector("PatLite");
         }
         
-        public BrokeredMessage GenerateBrokeredMessage(object message)
+        public Message GenerateBrokeredMessage(object payload)
         {
-            var messageBody = JsonConvert.SerializeObject(message);
+            return GenerateMessage(payload);
+        }
+
+        public Message GenerateMessage(object payload)
+        {
+            var messageBody = JsonConvert.SerializeObject(payload);
             var protectedmessageBody = _dataProtector.Protect(messageBody);
-            var brokeredMessage = new BrokeredMessage(protectedmessageBody);
-            brokeredMessage.Properties.Add("Encrypted", true);
-            return brokeredMessage;
+            var message = new Message(Encoding.UTF8.GetBytes(protectedmessageBody));
+            message.UserProperties.Add("Encrypted", true);
+            return message;
         }
     }
 }

@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net451</TargetFrameworks>
     <PackageId>PB.ITOps.Messaging.PatSender.Encryption</PackageId>
     <Description>Purplebricks support for sending encrypted messages</Description>
     <Company>Purplebricks</Company>
     <buildCounter Condition=" '$(buildCounter)' == '' ">0</buildCounter>
-    <Version>1.0.$(buildCounter)</Version>
+    <Version>2.0.$(buildCounter)</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="PB.ITOps.Messaging.DataProtection" Version="0.1.3" />
-    <PackageReference Include="PB.ITOps.Messaging.PatSender" Version="1.5.31" />
+    <PackageReference Include="PB.ITOps.Messaging.DataProtection" Version="1.0.4" />
+    <PackageReference Include="PB.ITOps.Messaging.PatSender" Version="2.0.33" />
   </ItemGroup>
 </Project>
