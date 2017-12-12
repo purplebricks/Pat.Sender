@@ -1,5 +1,4 @@
-﻿using Microsoft.ServiceBus.Messaging;
-using NSubstitute;
+﻿using NSubstitute;
 using PB.ITOps.Messaging.PatSender.Correlation;
 using PB.ITOps.Messaging.PatSender.Extensions;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
@@ -7,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.ServiceBus;
 using Xunit;
 
 namespace PB.ITOps.Messaging.PatSender.UnitTests
@@ -28,8 +28,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.PublishEvent(new Event1());
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p => 
-                p.Any(m => ((string)m.Properties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p => 
+                p.Any(m => ((string)m.UserProperties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
         }
 
         [Fact]
@@ -46,8 +46,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.PublishEvents(events);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                    p.Any(m => ((string)m.Properties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                    p.Any(m => ((string)m.UserProperties["MessageType"]).Equals("PB.ITOps.Messaging.PatSender.UnitTests.Event1"))));
         }
 
         [Fact]
@@ -63,8 +63,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = new MessagePublisher(messageSender, new MessageGenerator(), new MessageProperties(new NewCorrelationIdProvider()) { CustomProperties = customProperties });
             await messagePublisher.PublishEvent(new Event1());
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                    p.Any(m => ((string)m.UserProperties[testKey]).Equals(testValue))));
         }
 
         [Fact]
@@ -80,8 +80,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.PublishEvent(new Event1(), new MessageProperties(new NewCorrelationIdProvider()) { CustomProperties = customProperties });
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                    p.Any(m => ((string)m.UserProperties[testKey]).Equals(testValue))));
         }
 
         [Fact]
@@ -111,8 +111,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
                 });
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                    p.Any(m => ((string)m.Properties[testKey]).Equals(testValue))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                    p.Any(m => ((string)m.UserProperties[testKey]).Equals(testValue))));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
                 });
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
                     p.Any(m => m.GetCorrelationId().Equals(correlationId))));
         }
 
@@ -147,7 +147,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.ScheduleEvent(new Event1(), enqueueTime);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
+                .SendMessages(Arg.Is<IEnumerable<Message>>(t =>
                     t.Any(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
         }
 
@@ -166,7 +166,7 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             await messagePublisher.ScheduleEvents(events, enqueueTime);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(t =>
+                .SendMessages(Arg.Is<IEnumerable<Message>>(t =>
                     t.All(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
         }
 
@@ -177,8 +177,8 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.SendCommand(new Event1(), "TestSubscriber");
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                    p.Any(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber"))));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                    p.Any(m => ((string)m.UserProperties["SpecificSubscriber"]).Equals("TestSubscriber"))));
         }
 
         [Fact]
@@ -188,11 +188,11 @@ namespace PB.ITOps.Messaging.PatSender.UnitTests
             var messagePublisher = CreatePublisher(messageSender);
             await messagePublisher.SendCommands(new[] {new Event1(), new Event1()}, "TestSubscriber");
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<BrokeredMessage>>(p =>
-                    p.Count(m => ((string)m.Properties["SpecificSubscriber"]).Equals("TestSubscriber")) == 2));
+                .SendMessages(Arg.Is<IEnumerable<Message>>(p =>
+                    p.Count(m => ((string)m.UserProperties["SpecificSubscriber"]).Equals("TestSubscriber")) == 2));
         }
 
-        private MessagePublisher CreatePublisher(IMessageSender messageSender)
+        private static MessagePublisher CreatePublisher(IMessageSender messageSender)
             => new MessagePublisher(messageSender, new MessageGenerator(), new MessageProperties(new NewCorrelationIdProvider()));
     }
 }

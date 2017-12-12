@@ -1,10 +1,10 @@
-﻿using Microsoft.ServiceBus.Messaging;
-using PB.ITOps.Messaging.PatSender.Extensions;
+﻿using PB.ITOps.Messaging.PatSender.Extensions;
 using PB.ITOps.Messaging.PatSender.MessageGeneration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.ServiceBus;
 
 namespace PB.ITOps.Messaging.PatSender
 {
@@ -16,24 +16,9 @@ namespace PB.ITOps.Messaging.PatSender
 
         public MessagePublisher(IMessageSender messageSender, IMessageGenerator messageGenerator, MessageProperties defaultMessageProperties)
         {
-            if (messageSender == null)
-            {
-                throw new ArgumentNullException(nameof(messageSender));
-            }
-
-            if (messageGenerator == null)
-            {
-                throw new ArgumentNullException(nameof(messageGenerator));
-            }
-
-            if (defaultMessageProperties == null)
-            {
-                throw new ArgumentNullException(nameof(defaultMessageProperties));
-            }
-
-            _messageSender = messageSender;
-            _messageGenerator = messageGenerator;
-            _defaultMessageProperties = defaultMessageProperties;
+            _messageSender = messageSender ?? throw new ArgumentNullException(nameof(messageSender));
+            _messageGenerator = messageGenerator ?? throw new ArgumentNullException(nameof(messageGenerator));
+            _defaultMessageProperties = defaultMessageProperties ?? throw new ArgumentNullException(nameof(defaultMessageProperties));
         }
 
         /// <summary>
@@ -46,8 +31,8 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task PublishEvent(object @event, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessage = GenerateMessage(@event, eventSpecificProperties, null);
-            await _messageSender.SendMessages(new[] { brokeredMessage });
+            var message = GenerateMessage(@event, eventSpecificProperties, null);
+            await _messageSender.SendMessages(new[] { message });
         }
 
         /// <summary>
@@ -60,8 +45,8 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task PublishEvents(IEnumerable<object> events, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessages = GenerateMessages(events, eventSpecificProperties);
-            await _messageSender.SendMessages(brokeredMessages);
+            var messages = GenerateMessages(events, eventSpecificProperties);
+            await _messageSender.SendMessages(messages);
         }
 
         /// <summary>
@@ -73,13 +58,13 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task PublishEventsWithProperties(IEnumerable<EventWithProperties> events)
         {
-            var brokeredMessages = events.Select(
+            var messages = events.Select(
                 messageWithProperties => GenerateMessage(
                     messageWithProperties.Event,
                     messageWithProperties.Properties,
                     null));
 
-            await _messageSender.SendMessages(brokeredMessages);
+            await _messageSender.SendMessages(messages);
         }
 
         /// <summary>
@@ -93,8 +78,8 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task SendCommand(object command, string subscriber, MessageProperties commandSpecificProperties = null)
         {
-            var brokeredMessage = GenerateMessage(command, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(new[] { brokeredMessage });
+            var message = GenerateMessage(command, commandSpecificProperties, subscriber);
+            await _messageSender.SendMessages(new[] { message });
         }
 
         /// <summary>
@@ -108,8 +93,8 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task SendCommands(IEnumerable<object> commands, string subscriber, MessageProperties commandSpecificProperties = null)
         {
-            var brokeredMessages = GenerateMessages(commands, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(brokeredMessages);
+            var messages = GenerateMessages(commands, commandSpecificProperties, subscriber);
+            await _messageSender.SendMessages(messages);
         }
 
         /// <summary>
@@ -124,8 +109,8 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessage = GenerateMessage(@event, scheduledEnqueueTimeUtc, eventSpecificProperties);
-            await _messageSender.SendMessages(new[] { brokeredMessage });
+            var message = GenerateMessage(@event, scheduledEnqueueTimeUtc, eventSpecificProperties);
+            await _messageSender.SendMessages(new[] { message });
         }
 
         /// <summary>
@@ -140,46 +125,46 @@ namespace PB.ITOps.Messaging.PatSender
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
         public async Task ScheduleEvents(IEnumerable<object> events, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
         {
-            var brokeredMessages = GenerateMessages(events, scheduledEnqueueTimeUtc, eventSpecificProperties);
-            await _messageSender.SendMessages(brokeredMessages);
+            var messages = GenerateMessages(events, scheduledEnqueueTimeUtc, eventSpecificProperties);
+            await _messageSender.SendMessages(messages);
         }
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, MessageProperties messageSpecificProperties = null, string subscriber = null)
-            => messages.Select(message => GenerateMessage(message, messageSpecificProperties, subscriber));
+        private IEnumerable<Message> GenerateMessages(IEnumerable<object> messagePayloads, MessageProperties messageSpecificProperties = null, string subscriber = null)
+            => messagePayloads.Select(payload => GenerateMessage(payload, messageSpecificProperties, subscriber));
 
-        private IEnumerable<BrokeredMessage> GenerateMessages(IEnumerable<object> messages, DateTime scheduledEnqueueTimeUtc, MessageProperties messageSpecificProperties = null, string subscriber = null)
-            => messages.Select(message => GenerateMessage(message, scheduledEnqueueTimeUtc, messageSpecificProperties, subscriber));
+        private IEnumerable<Message> GenerateMessages(IEnumerable<object> messagePayloads, DateTime scheduledEnqueueTimeUtc, MessageProperties messageSpecificProperties = null, string subscriber = null)
+            => messagePayloads.Select(payload => GenerateMessage(payload, scheduledEnqueueTimeUtc, messageSpecificProperties, subscriber));
 
-        private BrokeredMessage GenerateMessage(object message, DateTime scheduledEnqueueTimeUtc, MessageProperties messageSpecificProperties = null, string subscriber = null)
+        private Message GenerateMessage(object payload, DateTime scheduledEnqueueTimeUtc, MessageProperties messageSpecificProperties = null, string subscriber = null)
         {
-            var brokeredMessage = GenerateMessage(message, messageSpecificProperties, subscriber);
-            brokeredMessage.ScheduledEnqueueTimeUtc = scheduledEnqueueTimeUtc;
+            var message = GenerateMessage(payload, messageSpecificProperties, subscriber);
+            message.ScheduledEnqueueTimeUtc = scheduledEnqueueTimeUtc;
 
-            return brokeredMessage;
+            return message;
         }
 
-        private BrokeredMessage GenerateMessage(object message, MessageProperties messageSpecificProperties, string subscriber)
+        private Message GenerateMessage(object payload, MessageProperties messageSpecificProperties, string subscriber)
         {
-            var brokeredMessage = _messageGenerator.GenerateBrokeredMessage(message);
+            var message = _messageGenerator.GenerateMessage(payload);
 
-            var messageType = message.GetType();
-            brokeredMessage.MessageId = Guid.NewGuid().ToString();
-            brokeredMessage.ContentType = messageType.SimpleQualifiedName();
-            brokeredMessage.Properties["MessageType"] = messageType.FullName;
+            var messageType = payload.GetType();
+            message.MessageId = Guid.NewGuid().ToString();
+            message.ContentType = messageType.SimpleQualifiedName();
+            message.UserProperties["MessageType"] = messageType.FullName;
 
-            brokeredMessage.PopulateCorrelationId(
+            message.PopulateCorrelationId(
                 messageSpecificProperties?.CorrelationIdProvider.CorrelationId
                 ?? _defaultMessageProperties.CorrelationIdProvider.CorrelationId);
 
-            brokeredMessage.AddProperties(_defaultMessageProperties.CustomProperties);
-            brokeredMessage.AddProperties(messageSpecificProperties?.CustomProperties);
+            message.AddProperties(_defaultMessageProperties.CustomProperties);
+            message.AddProperties(messageSpecificProperties?.CustomProperties);
 
             if (!string.IsNullOrEmpty(subscriber))
             {
-                brokeredMessage.Properties["SpecificSubscriber"] = subscriber;
+                message.UserProperties["SpecificSubscriber"] = subscriber;
             }
 
-            return brokeredMessage;
+            return message;
         }
     }
 }

@@ -1,7 +1,8 @@
-﻿using Microsoft.ServiceBus.Messaging;
+﻿using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
 using PB.ITOps.Messaging.PatSender.Extensions;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace PB.ITOps.Messaging.PatSender.Legacy
@@ -17,24 +18,24 @@ namespace PB.ITOps.Messaging.PatSender.Legacy
             _correlationId = correlationId;
         }
 
-        public async Task PublishLegacyMessage<TLegacyMessage>(TLegacyMessage message, string legacyMessageType, string legacyContentType) where TLegacyMessage : class
+        public async Task PublishLegacyMessage<TLegacyMessage>(TLegacyMessage legacyMessage, string legacyMessageType, string legacyContentType) where TLegacyMessage : class
         {
-            var brokeredMessage = GenerateMessage(message, legacyMessageType, legacyContentType);
-            await _messageSender.SendMessages(new[] { brokeredMessage });
+            var message = GenerateMessage(legacyMessage, legacyMessageType, legacyContentType);
+            await _messageSender.SendMessages(new[] { message });
         }
 
-        private BrokeredMessage GenerateMessage(object message, string legacyMessageType, string legacyContentType)
+        private Message GenerateMessage(object payload, string legacyMessageType, string legacyContentType)
         {
-            var brokeredMessage = new BrokeredMessage(JsonConvert.SerializeObject(message))
+            var message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(payload)))
             {
                 MessageId = Guid.NewGuid().ToString(),
                 ContentType = legacyContentType
             };
 
-            brokeredMessage.Properties["MessageType"] = legacyMessageType;
-            brokeredMessage.PopulateCorrelationId(_correlationId);
+            message.UserProperties["MessageType"] = legacyMessageType;
+            message.PopulateCorrelationId(_correlationId);
 
-            return brokeredMessage;
+            return message;
         }
     }
 }
