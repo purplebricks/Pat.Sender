@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net451</TargetFrameworks>
+    <PackageId>Pat.Sender.DataProtectionEncryption</PackageId>
+    <Description>Purplebricks support for sending encrypted messages</Description>
+    <Company>Purplebricks</Company>
+    <buildCounter Condition=" '$(buildCounter)' == '' ">0</buildCounter>
+    <Version>2.0.$(buildCounter)</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PB.ITOps.Messaging.DataProtection" Version="1.0.4" />
+    <PackageReference Include="Pat.Sender" Version="2.0.33" />
+  </ItemGroup>
+</Project>
