@@ -9,7 +9,9 @@ image: Visual Studio 2017
 build_script:  
 - dotnet build -c Release
 - dotnet pack -c Release
-test: off  
+test:
+  assemblies:
+    - '**\*tests.dll'
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
