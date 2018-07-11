@@ -73,7 +73,7 @@ namespace Pat.Sender
 
             foreach (var message in messageList)
             {
-                var size = message.GetSize();
+                var size = message.GetEstimatedMessageSize();
                 if (batchSize + size > MaxBatchSizeInBytes)
                 {
                     // Send current batch
