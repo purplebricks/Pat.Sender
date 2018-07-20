@@ -1,6 +1,7 @@
 ﻿using log4net;
+using Pat.Sender.Correlation;
 
-namespace Pat.Sender.Correlation
+namespace Pat.Sender.Log4Net
 {
     public class LogicalThreadContextCorrelationIdProvider : ICorrelationIdProvider
     {

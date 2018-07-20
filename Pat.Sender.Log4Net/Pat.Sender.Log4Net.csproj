@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net451</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.0.0</Version>
+    <Authors>Pat.Sender</Authors>
+    <Company>Purplebricks</Company>
+    <Product>Pat.Sender</Product>
+    <Description>Log4Net logging adapter for Purplebricks message sending infrastructure</Description>
+    <PackageLicenseUrl>https://github.com/purplebricks/Pat.Sender/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>http://purplebricks.io/pat/</PackageProjectUrl>
+    <PackageIconUrl>https://pbonlineassets.azureedge.net/web-images/favicons/favicon-96x96.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/purplebricks/Pat.Sender</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pat.Sender\Pat.Sender.csproj" />
+    <PackageReference Include="log4net" Version="2.0.8" />
+  </ItemGroup>
+
+</Project>
