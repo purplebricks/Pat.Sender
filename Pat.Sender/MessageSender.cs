@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using log4net;
 using Microsoft.Azure.ServiceBus;
 using Pat.Sender.Extensions;
 
@@ -14,13 +13,13 @@ namespace Pat.Sender
     /// </summary>
     public class MessageSender : IMessageSender
     {
-        private readonly ILog _log;
+        private readonly IPatSenderLog _log;
         private readonly PatSenderSettings _senderSettings;
         private readonly ConnectionResolver _connectionResolver;
 
         private const long MaxBatchSizeInBytes = 262144;    // 256k
 
-        public MessageSender(ILog log, PatSenderSettings senderSettings)
+        public MessageSender(IPatSenderLog log, PatSenderSettings senderSettings)
         {
             _log = log;
             _senderSettings = senderSettings;
@@ -49,16 +48,16 @@ namespace Pat.Sender
                 }
                 catch (Exception ex)
                 {
-                    _log.Warn("Failed sending topic message(s), checking for secondary fail-over service bus...", ex);
+                    _log.LogWarning("Failed sending topic message(s), checking for secondary fail-over service bus...", ex);
                     if (_connectionResolver.HasFailOver())
                     {
-                        _log.Info("Failing over to next service bus connection");
+                        _log.LogInformation("Failing over to next service bus connection");
                         _connectionResolver.FailOver();
                         retryOnFailOver = true;
                     }
                     else
                     {
-                        _log.FatalFormat("Failed to send topic message(s) of type: {0}", string.Join(", ", messagesToSend.Select(m => m.ContentType).Distinct()));
+                        _log.LogCritical("Failed to send topic message(s) of type: {0}", string.Join(", ", messagesToSend.Select(m => m.ContentType).Distinct()));
                         throw;
                     }
                 }
@@ -105,7 +104,7 @@ namespace Pat.Sender
             }
             catch (Exception exc)
             {
-                _log.Warn(totalMessageCount == messages.Count
+                _log.LogWarning(totalMessageCount == messages.Count
                     ? $"Failed to send complete batch of messages: {exc.Message}"
                     : $"Failed to send {messages.Count} messages from batch of {totalMessageCount} messages: {exc.Message}");
 

@@ -14,7 +14,6 @@
     <RepositoryUrl>https://github.com/purplebricks/Pat.Sender</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="log4net" Version="2.0.8" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="Microsoft.Azure.ServiceBus" Version="1.0.0" />
   </ItemGroup>
