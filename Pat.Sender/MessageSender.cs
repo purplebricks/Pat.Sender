@@ -57,7 +57,7 @@ namespace Pat.Sender
                     }
                     else
                     {
-                        _log.LogCritical("Failed to send topic message(s) of type: {0}", string.Join(", ", messagesToSend.Select(m => m.ContentType).Distinct()));
+                        _log.LogCritical($"Failed to send topic message(s) of type: {string.Join(", ", messagesToSend.Select(m => m.ContentType).Distinct())}");
                         throw;
                     }
                 }

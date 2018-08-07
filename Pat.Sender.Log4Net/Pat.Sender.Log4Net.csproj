@@ -8,6 +8,7 @@
     <Company>Purplebricks</Company>
     <Product>Pat.Sender</Product>
     <Description>Log4Net logging adapter for Purplebricks message sending infrastructure</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageLicenseUrl>https://github.com/purplebricks/Pat.Sender/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>http://purplebricks.io/pat/</PackageProjectUrl>
     <PackageIconUrl>https://pbonlineassets.azureedge.net/web-images/favicons/favicon-96x96.png</PackageIconUrl>
