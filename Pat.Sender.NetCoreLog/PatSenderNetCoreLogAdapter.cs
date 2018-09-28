@@ -4,11 +4,11 @@ using System;
 namespace Pat.Sender.NetCoreLog
 {
     /// <inheritdoc />
-    public class PatSenderNetCoreLogAdapter : IPatSenderLog
+    public class PatSenderNetCoreLogAdapter<T> : IPatSenderLog<T>
     {
         private readonly ILogger log;
 
-        public PatSenderNetCoreLogAdapter(ILogger log)
+        public PatSenderNetCoreLogAdapter(ILogger<T> log)
         {
             this.log = log;
         }

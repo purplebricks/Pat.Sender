@@ -4,7 +4,7 @@ using System;
 namespace Pat.Sender.Log4Net
 {
     /// <inheritdoc />
-    public class PatSenderLog4NetAdapter : IPatSenderLog
+    public class PatSenderLog4NetAdapter<T> : IPatSenderLog<T>
     {
         private readonly ILog log;
 
