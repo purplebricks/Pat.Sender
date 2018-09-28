@@ -19,7 +19,7 @@ namespace Pat.Sender
 
         private const long MaxBatchSizeInBytes = 262144;    // 256k
 
-        public MessageSender(IPatSenderLog log, PatSenderSettings senderSettings)
+        public MessageSender(IPatSenderLog<MessageSender> log, PatSenderSettings senderSettings)
         {
             _log = log;
             _senderSettings = senderSettings;

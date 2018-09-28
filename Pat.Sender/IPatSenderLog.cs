@@ -36,4 +36,8 @@ namespace Pat.Sender
         /// <param name="message">The log entry</param>
         void LogCritical(string message);
     }
+
+    public interface IPatSenderLog<T> : IPatSenderLog
+    {
+    }
 }
