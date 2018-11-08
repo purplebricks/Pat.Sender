@@ -64,6 +64,47 @@ namespace Pat.Sender
             } while (retryOnFailOver);
         }
 
+        /// <summary>
+        /// Schedules brokered message directly to service bus topic        
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="scheduleDateTimeOffSet"></param>
+        /// <returns>return sequence number which uniquely identified scheduled event.</returns>
+        public async Task<long> ScheduleMessage(Message message, DateTimeOffset scheduleDateTimeOffSet)
+        {
+            try
+            {
+                //clone required otherwise retry on failover connection will fail with "brokered message '{id}' has already been consumed"
+                var topicClient = GetTopicClient();
+                var clonedMessages = message.Clone();
+                var sequenceNumber = await topicClient.ScheduleMessageAsync(clonedMessages, scheduleDateTimeOffSet);
+                return sequenceNumber;
+            }
+            catch (Exception exc)
+            {
+                _log.LogCritical($"Failed to send message {exc.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Cancel scheduled brokered message
+        /// </summary>
+        /// <param name="sequenceNumber"></param>
+        /// <returns></returns>
+        public async Task CancelScheduledMessage(long sequenceNumber)
+        {
+            try
+            {
+                var topicClient = GetTopicClient();
+                await topicClient.CancelScheduledMessageAsync(sequenceNumber);
+            }
+            catch(Exception ex)
+            {
+                _log.LogCritical($"Failed to cancel message {ex.Message}");
+            }
+        }
+
         private async Task SendPartitionedBatch(TopicClient topicClient, IList<Message> messageList)
         {
             var batchList = new List<Message>();
@@ -111,5 +152,33 @@ namespace Pat.Sender
                 throw;
             }
         }
+                
+        private TopicClient GetTopicClient()
+        {
+            bool retryOnFailOver;
+            do
+            {
+                retryOnFailOver = false;
+                var connectionString = _connectionResolver.GetConnection();
+                try
+                {
+                    var client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName);
+                    return client;
+                }
+                catch (Exception ex)
+                {
+                    if (_connectionResolver.HasFailOver())
+                    {
+                        _log.LogInformation("Failing over to next service bus connection");
+                        _connectionResolver.FailOver();
+                        retryOnFailOver = true;
+                    }
+                    _log.LogCritical($"Failed over to service bus connection with exception {ex}");
+                    throw;
+                }
+            } while (retryOnFailOver);
+        }
+
+        
     }
 }

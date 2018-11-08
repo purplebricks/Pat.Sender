@@ -107,10 +107,20 @@ namespace Pat.Sender
         /// <param name="scheduledEnqueueTimeUtc">The UTC time when the event will be published.</param>
         /// <param name="eventSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>.</param>
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
-        public async Task ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
+        public async Task<long> ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
+        {            
+            var message = GenerateMessage(@event, eventSpecificProperties, null);
+            return await _messageSender.ScheduleMessage(message, scheduledEnqueueTimeUtc);
+        }
+        
+        /// <summary>
+        /// Cancel a single event at any point in time.        
+        /// </summary>
+        /// <param name="sequenceNumber">Sequence number uniquely identified scheduled event.</param>        
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task CancelScheduledEvent(long sequenceNumber)
         {
-            var message = GenerateMessage(@event, scheduledEnqueueTimeUtc, eventSpecificProperties);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.CancelScheduledMessage(sequenceNumber);
         }
 
         /// <summary>
@@ -140,10 +150,20 @@ namespace Pat.Sender
         /// <param name="scheduledEnqueueTimeUtc">The UTC time when the events will be published.</param>
         /// <param name="commandSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>. Apply to all commands in the set.</param>
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
-        public async Task ScheduleCommand(object command, string subscriber, DateTime scheduledEnqueueTimeUtc, MessageProperties commandSpecificProperties = null)
+        public async Task<long> ScheduleCommand(object command, string subscriber, DateTime scheduledEnqueueTimeUtc, MessageProperties commandSpecificProperties = null)
+        {            
+            var message = GenerateMessage(command, commandSpecificProperties, subscriber);
+            return await _messageSender.ScheduleMessage(message, scheduledEnqueueTimeUtc);
+        }
+
+        /// <summary>
+        /// Cancel a single message at any point in time.        
+        /// </summary>
+        /// <param name="sequenceNumber">Sequence number uniquely identified scheduled event.</param>        
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        public async Task CancelScheduledCommand(long sequenceNumber)
         {
-            var message = GenerateMessage(command, scheduledEnqueueTimeUtc, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.CancelScheduledMessage(sequenceNumber);
         }
 
         /// <summary>

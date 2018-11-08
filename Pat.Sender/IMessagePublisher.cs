@@ -66,9 +66,19 @@ namespace Pat.Sender
         /// <param name="event">The event to trigger at a time in the future.</param>
         /// <param name="scheduledEnqueueTimeUtc">The UTC time when the event will be published.</param>
         /// <param name="eventSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>.</param>
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion. Returns sequence number uniquely identified by to be used to cancel this schedule event in </returns>
+        Task<long> ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null);
+        
+        /// <summary>
+        /// Schedules a single event to be published after a delay, sending it directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event type
+        /// Sets the correlation id on the message if specified.
+        /// Schedules the message to enqueue for delivery at the specified time (UTC).
+        /// </summary>
+        /// <param name="sequenceNumber">sequence number used to cancel the message at any point in time. </param>        
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
-        Task ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null);
-
+        Task CancelScheduledEvent(long sequenceNumber);
+        
         /// <summary>
         /// Schedules a collection of events to be published after a delay, sending them directly to the service bus topic.
         /// Sets the contentType and messageType based on the concrete event types
@@ -93,8 +103,20 @@ namespace Pat.Sender
         /// <param name="scheduledEnqueueTimeUtc">The UTC time when the events will be published.</param>
         /// <param name="commandSpecificProperties">Properties that override the defaults set on the <see cref="IMessagePublisher"/>. Apply to all commands in the set.</param>
         /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
-        Task ScheduleCommand(object command, string subscriber, DateTime scheduledEnqueueTimeUtc, MessageProperties commandSpecificProperties = null);
-
+        Task<long> ScheduleCommand(object command, string subscriber, DateTime scheduledEnqueueTimeUtc, MessageProperties commandSpecificProperties = null);
+        
+        
+        /// <summary>
+        /// Schedules a single event to be published after a delay, sending it directly to the service bus topic.
+        /// Sets the contentType and messageType based on the concrete event type
+        /// Sets the correlation id on the message if specified.
+        /// Schedules the message to enqueue for delivery at the specified time (UTC).
+        /// </summary>
+        /// <param name="sequenceNumber">sequence number used to cancel the message at any point in time. </param>        
+        /// <returns>A <see cref="Task"/> that should be awaited to track exceptions arising, or to track completion.</returns>
+        Task CancelScheduledCommand(long sequenceNumber);
+        
+        
         /// <summary>
         /// Schedules a collection of commands to be sent after a delay, sending them directly to the service bus topic.
         /// Sets the contentType and messageType based on the concrete event types

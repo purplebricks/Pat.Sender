@@ -147,8 +147,8 @@ namespace Pat.Sender.UnitTests
             await messagePublisher.ScheduleEvent(new Event1(), enqueueTime);
 
             await messageSender.Received(1)
-                .SendMessages(Arg.Is<IEnumerable<Message>>(t =>
-                    t.Any(m => m.ScheduledEnqueueTimeUtc == enqueueTime)));
+                .ScheduleMessage(Arg.Any<Message>(),
+                                 Arg.Is<DateTimeOffset>(t => t ==enqueueTime));
         }
 
         [Fact]
