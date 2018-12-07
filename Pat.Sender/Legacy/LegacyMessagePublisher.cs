@@ -21,7 +21,7 @@ namespace Pat.Sender.Legacy
         public async Task PublishLegacyMessage<TLegacyMessage>(TLegacyMessage legacyMessage, string legacyMessageType, string legacyContentType) where TLegacyMessage : class
         {
             var message = GenerateMessage(legacyMessage, legacyMessageType, legacyContentType);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.SendMessages(new[] { message }).ConfigureAwait(false);
         }
 
         private Message GenerateMessage(object payload, string legacyMessageType, string legacyContentType)

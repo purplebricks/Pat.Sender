@@ -32,7 +32,7 @@ namespace Pat.Sender
         public async Task PublishEvent(object @event, MessageProperties eventSpecificProperties = null)
         {
             var message = GenerateMessage(@event, eventSpecificProperties, null);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.SendMessages(new[] { message }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Pat.Sender
         public async Task PublishEvents(IEnumerable<object> events, MessageProperties eventSpecificProperties = null)
         {
             var messages = GenerateMessages(events, eventSpecificProperties);
-            await _messageSender.SendMessages(messages);
+            await _messageSender.SendMessages(messages).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace Pat.Sender
                     messageWithProperties.Properties,
                     null));
 
-            await _messageSender.SendMessages(messages);
+            await _messageSender.SendMessages(messages).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Pat.Sender
         public async Task SendCommand(object command, string subscriber, MessageProperties commandSpecificProperties = null)
         {
             var message = GenerateMessage(command, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.SendMessages(new[] { message }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Pat.Sender
         public async Task SendCommands(IEnumerable<object> commands, string subscriber, MessageProperties commandSpecificProperties = null)
         {
             var messages = GenerateMessages(commands, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(messages);
+            await _messageSender.SendMessages(messages).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Pat.Sender
         public async Task ScheduleEvent(object @event, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
         {
             var message = GenerateMessage(@event, scheduledEnqueueTimeUtc, eventSpecificProperties);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.SendMessages(new[] { message }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace Pat.Sender
         public async Task ScheduleEvents(IEnumerable<object> events, DateTime scheduledEnqueueTimeUtc, MessageProperties eventSpecificProperties = null)
         {
             var messages = GenerateMessages(events, scheduledEnqueueTimeUtc, eventSpecificProperties);
-            await _messageSender.SendMessages(messages);
+            await _messageSender.SendMessages(messages).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace Pat.Sender
         public async Task ScheduleCommand(object command, string subscriber, DateTime scheduledEnqueueTimeUtc, MessageProperties commandSpecificProperties = null)
         {
             var message = GenerateMessage(command, scheduledEnqueueTimeUtc, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(new[] { message });
+            await _messageSender.SendMessages(new[] { message }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Pat.Sender
         public async Task ScheduleCommands(IEnumerable<object> commands, string subscriber, DateTime scheduledEnqueueTimeUtc, MessageProperties commandSpecificProperties = null)
         {
             var messages = GenerateMessages(commands, scheduledEnqueueTimeUtc, commandSpecificProperties, subscriber);
-            await _messageSender.SendMessages(messages);
+            await _messageSender.SendMessages(messages).ConfigureAwait(false);
         }
 
         private IEnumerable<Message> GenerateMessages(IEnumerable<object> messagePayloads, MessageProperties messageSpecificProperties = null, string subscriber = null)
