@@ -44,7 +44,7 @@ namespace Pat.Sender
                 {
                     var client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName);
                     
-                    await SendPartitionedBatch(client, messagesToSend);
+                    await SendPartitionedBatch(client, messagesToSend).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -76,7 +76,7 @@ namespace Pat.Sender
                 if (batchSize + size > MaxBatchSizeInBytes)
                 {
                     // Send current batch
-                    await SendBatch(topicClient, batchList, totalMessageCount);
+                    await SendBatch(topicClient, batchList, totalMessageCount).ConfigureAwait(false);
 
                     // Initialize a new batch
                     batchList = new List<Message> { message };
@@ -91,7 +91,7 @@ namespace Pat.Sender
             }
 
             // The final batch is sent outside of the loop
-            await SendBatch(topicClient, batchList, totalMessageCount);
+            await SendBatch(topicClient, batchList, totalMessageCount).ConfigureAwait(false);
         }
 
         private async Task SendBatch(TopicClient topicClient, List<Message> messages, int totalMessageCount)
@@ -100,7 +100,7 @@ namespace Pat.Sender
             {
                 //clone required otherwise retry on failover connection will fail with "brokered message '{id}' has already been consumed"
                 var clonedMessages = messages.Select(m => m.Clone()).ToList();
-                await topicClient.SendAsync(clonedMessages);
+                await topicClient.SendAsync(clonedMessages).ConfigureAwait(false);
             }
             catch (Exception exc)
             {
