@@ -11,7 +11,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageLicenseUrl>https://github.com/purplebricks/Pat.Sender/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>http://purplebricks.io/pat/</PackageProjectUrl>
-    <PackageIconUrl>https://pbonlineassets.azureedge.net/web-images/favicons/favicon-96x96.png</PackageIconUrl>
+    <PackageIconUrl>https://pbonlineassets.azureedge.net/web-images/marketing-global/favicons/v3/apple-touch-icon-152x152.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/purplebricks/Pat.Sender</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
