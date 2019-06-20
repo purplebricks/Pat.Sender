@@ -66,8 +66,8 @@ namespace Pat.Sender.Extensions
                                          8 +            // TimeToLive
                                          assumeSize +   // To
                                          assumeSize;    // ViaPartitionKey;
-            var headers = message.UserProperties.Sum(property => GetStringSizeInBytes(property.Key) + GetStringSizeInBytes(property.Value.ToString()));
-            var bodySize = message.Body.Length;
+            var headers = message.UserProperties.Sum(property => GetStringSizeInBytes(property.Key) + GetStringSizeInBytes(property.Value?.ToString()));
+            var bodySize = (message.Body?.Length).GetValueOrDefault();
             var total = standardPropertiesSize + headers + bodySize;
             const int messageSizePaddingPercentage = 5;
             const double padWithPercentage = (double)(100 + messageSizePaddingPercentage) / 100;
