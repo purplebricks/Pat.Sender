@@ -43,7 +43,7 @@ namespace Pat.Sender
                 var connectionString = _connectionResolver.GetConnection();
                 try
                 {
-                    TopicClient client ;
+                    TopicClient client;
                     if (_senderSettings.TokenProvider != null) 
                     {
                         client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName, _senderSettings.TokenProvider);
