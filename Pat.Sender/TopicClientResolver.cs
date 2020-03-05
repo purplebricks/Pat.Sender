@@ -45,7 +45,7 @@ namespace Pat.Sender
                     return TokenClients[connectionString];
                 }
                 ServiceBusConnectionStringBuilder builder = new ServiceBusConnectionStringBuilder(connectionString);
-                var topicClient = new TopicClient(builder.Endpoint, topicName, tokenProvider,retryPolicy: RetryPolicy.Default);
+                var topicClient = new TopicClient(builder.Endpoint, topicName, tokenProvider, retryPolicy: RetryPolicy.Default);
                 TokenClients.Add(connectionString, topicClient);
                 return topicClient;
             }
