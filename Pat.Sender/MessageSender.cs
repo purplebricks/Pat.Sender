@@ -51,9 +51,7 @@ namespace Pat.Sender
                     else
                     {
                         client = TopicClientResolver.GetTopic(connectionString, _senderSettings.EffectiveTopicName);
-                        
                     }
-                    
                     await SendPartitionedBatch(client, messagesToSend).ConfigureAwait(false);
                 }
                 catch (Exception ex)
