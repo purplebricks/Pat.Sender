@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Azure.ServiceBus.Primitives;
 
 namespace Pat.Sender
 {
@@ -35,5 +36,10 @@ namespace Pat.Sender
         /// Should be set to true for local development.
         /// </summary>
         public bool UseDevelopmentTopic { get; set; }
+
+        /// <summary>
+        /// Token Provider that will be used to authenticate against the service bus.
+        /// </summary>
+        public TokenProvider TokenProvider { get; set; }
     }
 }
